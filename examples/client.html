@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSocket Client Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        .container { margin-bottom: 20px; }
+        button { padding: 10px 15px; margin: 5px; border: none; border-radius: 4px; cursor: pointer; }
+        .connect { background-color: #4CAF50; color: white; }
+        .disconnect { background-color: #f44336; color: white; }
+        .send { background-color: #2196F3; color: white; }
+        input, textarea { width: 100%; padding: 8px; margin: 5px 0; border: 1px solid #ddd; border-radius: 4px; }
+        #messages { height: 300px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; background-color: #f9f9f9; }
+        .message { margin: 5px 0; padding: 5px; border-radius: 3px; }
+        .system { background-color: #e3f2fd; }
+        .chat { background-color: #f3e5f5; }
+        .error { background-color: #ffebee; color: #c62828; }
+    </style>
+</head>
+<body>
+    <h1>WebSocket Client Test</h1>
+    
+    <div class="container">
+        <button id="connect" class="connect">Connect</button>
+        <button id="disconnect" class="disconnect" disabled>Disconnect</button>
+        <span id="status">Disconnected</span>
+    </div>
+
+    <div class="container">
+        <h3>Join Room</h3>
+        <input type="text" id="roomName" placeholder="Room name" value="general">
+        <input type="text" id="username" placeholder="Username" value="User1">
+        <button id="joinRoom" class="send" disabled>Join Room</button>
+        <button id="leaveRoom" class="send" disabled>Leave Room</button>
+    </div>
+
+    <div class="container">
+        <h3>Chat</h3>
+        <textarea id="messageInput" placeholder="Type your message..." rows="3"></textarea>
+        <button id="sendMessage" class="send" disabled>Send Message</button>
+    </div>
+
+    <div class="container">
+        <h3>Messages</h3>
+        <div id="messages"></div>
+        <button onclick="clearMessages()">Clear Messages</button>
+    </div>
+
+    <script>
+        let ws = null;
+        let currentRoom = null;
+        
+        const connectBtn = document.getElementById('connect');
+        const disconnectBtn = document.getElementById('disconnect');
+        const statusSpan = document.getElementById('status');
+        const messagesDiv = document.getElementById('messages');
+        const joinRoomBtn = document.getElementById('joinRoom');
+        const leaveRoomBtn = document.getElementById('leaveRoom');
+        const sendMessageBtn = document.getElementById('sendMessage');
+        const messageInput = document.getElementById('messageInput');
+        const roomNameInput = document.getElementById('roomName');
+        const usernameInput = document.getElementById('username');
+
+        connectBtn.addEventListener('click', connect);
+        disconnectBtn.addEventListener('click', disconnect);
+        joinRoomBtn.addEventListener('click', joinRoom);
+        leaveRoomBtn.addEventListener('click', leaveRoom);
+        sendMessageBtn.addEventListener('click', sendMessage);
+        
+        messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        function connect() {
+            ws = new WebSocket('ws://localhost:3000/ws');
+            
+            ws.onopen = () => {
+                updateStatus('Connected', true);
+                addMessage('Connected to server', 'system');
+            };
+            
+            ws.onmessage = (event) => {
+                try {
+                    const message = JSON.parse(event.data);
+                    handleMessage(message);
+                } catch (error) {
+                    addMessage('Invalid message received: ' + event.data, 'error');
+                }
+            };
+            
+            ws.onclose = () => {
+                updateStatus('Disconnected', false);
+                addMessage('Disconnected from server', 'system');
+            };
+            
+            ws.onerror = (error) => {
+                addMessage('WebSocket error: ' + error, 'error');
+            };
+        }
+
+        function disconnect() {
+            if (ws) {
+                ws.close();
+                ws = null;
+            }
+        }
+
+        function joinRoom() {
+            if (!ws || ws.readyState !== WebSocket.OPEN) return;
+            
+            const room = roomNameInput.value.trim();
+            const username = usernameInput.value.trim();
+            
+            if (!room) {
+                alert('Please enter a room name');
+                return;
+            }
+            
+            const message = {
+                type: 'join_room',
+                data: {
+                    room: room,
+                    username: username || 'Anonymous'
+                }
+            };
+            
+            ws.send(JSON.stringify(message));
+        }
+
+        function leaveRoom() {
+            if (!ws || ws.readyState !== WebSocket.OPEN) return;
+            
+            const message = {
+                type: 'leave_room',
+                data: {}
+            };
+            
+            ws.send(JSON.stringify(message));
+        }
+
+        function sendMessage() {
+            if (!ws || ws.readyState !== WebSocket.OPEN) return;
+            
+            const content = messageInput.value.trim();
+            if (!content) return;
+            
+            const message = {
+                type: 'chat',
+                data: {
+                    content: content,
+                    author: usernameInput.value.trim() || 'Anonymous',
+                    room: currentRoom || 'general'
+                }
+            };
+            
+            ws.send(JSON.stringify(message));
+            messageInput.value = '';
+        }
+
+        function handleMessage(message) {
+            switch (message.type) {
+                case 'welcome':
+                    addMessage('Welcome! Connection ID: ' + message.data.connectionId, 'system');
+                    break;
+                case 'join_room':
+                    if (message.data.success) {
+                        currentRoom = message.data.room;
+                        addMessage('Joined room: ' + currentRoom, 'system');
+                    }
+                    break;
+                case 'leave_room':
+                    if (message.data.success) {
+                        addMessage('Left room: ' + message.data.room, 'system');
+                        currentRoom = null;
+                    }
+                    break;
+                case 'chat':
+                    const author = message.data.author || 'Anonymous';
+                    const room = message.data.room || 'general';
+                    addMessage(`[${room}] ${author}: ${message.data.content}`, 'chat');
+                    break;
+                case 'broadcast':
+                    addMessage(`${message.data.message}`, 'system');
+                    break;
+                case 'error':
+                    addMessage('Error: ' + message.data.message, 'error');
+                    break;
+                default:
+                    addMessage('Unknown message: ' + JSON.stringify(message), 'system');
+            }
+        }
+
+        function addMessage(text, type = 'system') {
+            const messageEl = document.createElement('div');
+            messageEl.className = 'message ' + type;
+            messageEl.textContent = new Date().toLocaleTimeString() + ' - ' + text;
+            messagesDiv.appendChild(messageEl);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        function updateStatus(status, connected) {
+            statusSpan.textContent = status;
+            connectBtn.disabled = connected;
+            disconnectBtn.disabled = !connected;
+            joinRoomBtn.disabled = !connected;
+            leaveRoomBtn.disabled = !connected;
+            sendMessageBtn.disabled = !connected;
+        }
+
+        function clearMessages() {
+            messagesDiv.innerHTML = '';
+        }
+    </script>
+</body>
+</html>
