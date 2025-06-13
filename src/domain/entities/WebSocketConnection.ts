@@ -57,6 +57,10 @@ export class WebSocketConnection {
     return this.websocket;
   }
 
+  getRemoteAddress(): string {
+    return this.metadata.ipAddress || 'unknown';
+  }
+
   setStatus(status: ConnectionStatus): void {
     this.status = status;
     if (status === ConnectionStatus.DISCONNECTED) {

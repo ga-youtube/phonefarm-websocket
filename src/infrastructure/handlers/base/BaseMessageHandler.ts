@@ -2,12 +2,22 @@ import { Message } from '../../../domain/entities/Message.ts';
 import { WebSocketConnection } from '../../../domain/entities/WebSocketConnection.ts';
 import { IMessageHandler } from '../../../application/ports/IMessageHandler.ts';
 import { MessageType } from '../../../domain/value-objects/MessageType.ts';
+import { ILogger } from '../../logging/LoggerService.ts';
 
 export abstract class BaseMessageHandler implements IMessageHandler {
   protected readonly supportedMessageTypes: MessageType[];
+  protected readonly logger: ILogger;
 
-  constructor(supportedMessageTypes: MessageType[]) {
+  constructor(supportedMessageTypes: MessageType[], logger?: ILogger) {
     this.supportedMessageTypes = supportedMessageTypes;
+    // Create a mock logger if none provided to avoid breaking existing handlers
+    this.logger = logger || {
+      info: () => {},
+      warn: () => {},
+      error: () => {},
+      debug: () => {},
+      child: () => this.logger
+    } as ILogger;
   }
 
   canHandle(messageType: string): boolean {

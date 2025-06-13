@@ -6,6 +6,7 @@ import { ChatMessageHandler } from '../handlers/ChatMessageHandler.ts';
 import { JoinRoomHandler } from '../handlers/JoinRoomHandler.ts';
 import { LeaveRoomHandler } from '../handlers/LeaveRoomHandler.ts';
 import { MessageValidator } from '../validation/MessageValidator.ts';
+import { LoggerService, ILogger } from '../logging/LoggerService.ts';
 import { HandleMessageUseCase } from '../../application/use-cases/HandleMessageUseCase.ts';
 import { BroadcastMessageUseCase } from '../../application/use-cases/BroadcastMessageUseCase.ts';
 import { MessageDispatcher } from '../../application/services/MessageDispatcher.ts';
@@ -16,6 +17,8 @@ import { IMessageHandlerRegistry } from '../../application/ports/IMessageHandler
 
 export class ServiceRegistry {
   static register(): void {
+    container.registerSingleton('Logger', () => new LoggerService());
+    
     container.registerSingleton('ConnectionRepository', () => new ConnectionRepository());
     
     container.registerSingleton('BunWebSocketServer', () => {
@@ -46,22 +49,26 @@ export class ServiceRegistry {
 
     container.registerSingleton('WebSocketController', () => {
       const messageDispatcher = container.resolve<MessageDispatcher>('MessageDispatcher');
-      return new WebSocketController(messageDispatcher);
+      const logger = container.resolve<ILogger>('Logger');
+      return new WebSocketController(messageDispatcher, logger);
     });
 
     container.registerTransient('ChatMessageHandler', () => {
       const broadcastUseCase = container.resolve<BroadcastMessageUseCase>('BroadcastMessageUseCase');
-      return new ChatMessageHandler(broadcastUseCase);
+      const logger = container.resolve<ILogger>('Logger');
+      return new ChatMessageHandler(broadcastUseCase, logger);
     });
 
     container.registerTransient('JoinRoomHandler', () => {
       const broadcastUseCase = container.resolve<BroadcastMessageUseCase>('BroadcastMessageUseCase');
-      return new JoinRoomHandler(broadcastUseCase);
+      const logger = container.resolve<ILogger>('Logger');
+      return new JoinRoomHandler(broadcastUseCase, logger);
     });
 
     container.registerTransient('LeaveRoomHandler', () => {
       const broadcastUseCase = container.resolve<BroadcastMessageUseCase>('BroadcastMessageUseCase');
-      return new LeaveRoomHandler(broadcastUseCase);
+      const logger = container.resolve<ILogger>('Logger');
+      return new LeaveRoomHandler(broadcastUseCase, logger);
     });
   }
 
