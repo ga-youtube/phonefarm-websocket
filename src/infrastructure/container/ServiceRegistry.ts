@@ -5,6 +5,8 @@ import { MessageHandlerRegistry } from '../handlers/MessageHandlerRegistry.ts';
 import { ChatMessageHandler } from '../handlers/ChatMessageHandler.ts';
 import { JoinRoomHandler } from '../handlers/JoinRoomHandler.ts';
 import { LeaveRoomHandler } from '../handlers/LeaveRoomHandler.ts';
+import { DeviceInfoMessageHandler } from '../handlers/DeviceInfoMessageHandler.ts';
+import { DeviceRepository } from '../repositories/DeviceRepository.ts';
 import { MessageValidator } from '../validation/MessageValidator.ts';
 import { LoggerService, ILogger } from '../logging/LoggerService.ts';
 import { HandleMessageUseCase } from '../../application/use-cases/HandleMessageUseCase.ts';
@@ -12,6 +14,7 @@ import { BroadcastMessageUseCase } from '../../application/use-cases/BroadcastMe
 import { MessageDispatcher } from '../../application/services/MessageDispatcher.ts';
 import { WebSocketController } from '../../presentation/controllers/WebSocketController.ts';
 import { IConnectionRepository } from '../../domain/repositories/IConnectionRepository.ts';
+import { IDeviceRepository } from '../../domain/repositories/IDeviceRepository.ts';
 import { IWebSocketServer } from '../../application/ports/IWebSocketServer.ts';
 import { IMessageHandlerRegistry } from '../../application/ports/IMessageHandler.ts';
 
@@ -20,6 +23,8 @@ export class ServiceRegistry {
     container.registerSingleton('Logger', () => new LoggerService());
     
     container.registerSingleton('ConnectionRepository', () => new ConnectionRepository());
+    
+    container.registerSingleton('DeviceRepository', () => new DeviceRepository());
     
     container.registerSingleton('BunWebSocketServer', () => {
       const connectionRepository = container.resolve<IConnectionRepository>('ConnectionRepository');
@@ -70,6 +75,11 @@ export class ServiceRegistry {
       const logger = container.resolve<ILogger>('Logger');
       return new LeaveRoomHandler(broadcastUseCase, logger);
     });
+
+    container.registerTransient('DeviceInfoMessageHandler', () => {
+      const deviceRepository = container.resolve<IDeviceRepository>('DeviceRepository');
+      return new DeviceInfoMessageHandler(deviceRepository);
+    });
   }
 
   static registerHandlers(): void {
@@ -78,5 +88,6 @@ export class ServiceRegistry {
     handlerRegistry.register(container.resolve<ChatMessageHandler>('ChatMessageHandler'));
     handlerRegistry.register(container.resolve<JoinRoomHandler>('JoinRoomHandler'));
     handlerRegistry.register(container.resolve<LeaveRoomHandler>('LeaveRoomHandler'));
+    handlerRegistry.register(container.resolve<DeviceInfoMessageHandler>('DeviceInfoMessageHandler'));
   }
 }

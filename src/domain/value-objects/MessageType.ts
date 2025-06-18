@@ -5,7 +5,8 @@ export enum MessageType {
   BROADCAST = 'broadcast',
   PING = 'ping',
   PONG = 'pong',
-  ERROR = 'error'
+  ERROR = 'error',
+  DEVICE_INFO = 'device_info'
 }
 
 export class MessageTypeVO {

@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "postgres": {
+      "command": "uv",
+      "args": [
+        "run",
+        "postgres-mcp",
+        "--access-mode=unrestricted"
+      ],
+      "env": {
+        "DATABASE_URI": "postgresql://app:tkZRa7bJsP8EWJB24uSkbrxTpj6YYpBQCicR4PvX0oJiaCKTHqXF08U9QXpzNxQd@10.10.8.58:30373/app"
+      }
+    }
+  }
+}

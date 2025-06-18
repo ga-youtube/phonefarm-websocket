@@ -1,0 +1,102 @@
+{
+  "name": "001_create_devices_table",
+  "operations": [
+    {
+      "create_table": {
+        "name": "devices",
+        "columns": [
+          {
+            "name": "id",
+            "type": "serial",
+            "pk": true
+          },
+          {
+            "name": "connection_id",
+            "type": "varchar(255)",
+            "nullable": false
+          },
+          {
+            "name": "serial",
+            "type": "varchar(255)",
+            "nullable": false,
+            "unique": true
+          },
+          {
+            "name": "imei",
+            "type": "varchar(20)",
+            "nullable": true
+          },
+          {
+            "name": "mac_address",
+            "type": "varchar(17)",
+            "nullable": true
+          },
+          {
+            "name": "wifi_ip_address",
+            "type": "inet",
+            "nullable": true
+          },
+          {
+            "name": "brand",
+            "type": "varchar(100)",
+            "nullable": false
+          },
+          {
+            "name": "model",
+            "type": "varchar(100)",
+            "nullable": false
+          },
+          {
+            "name": "android_release",
+            "type": "varchar(20)",
+            "nullable": false
+          },
+          {
+            "name": "android_sdk_int",
+            "type": "integer",
+            "nullable": false
+          },
+          {
+            "name": "created_at",
+            "type": "timestamp",
+            "nullable": false,
+            "default": "NOW()"
+          },
+          {
+            "name": "updated_at",
+            "type": "timestamp",
+            "nullable": false,
+            "default": "NOW()"
+          },
+          {
+            "name": "last_seen_at",
+            "type": "timestamp",
+            "nullable": false,
+            "default": "NOW()"
+          }
+        ]
+      }
+    },
+    {
+      "create_index": {
+        "name": "idx_devices_serial",
+        "table": "devices",
+        "columns": ["serial"]
+      }
+    },
+    {
+      "create_index": {
+        "name": "idx_devices_imei",
+        "table": "devices",
+        "columns": ["imei"]
+      }
+    },
+    {
+      "create_index": {
+        "name": "idx_devices_mac_address",
+        "table": "devices",
+        "columns": ["mac_address"]
+      }
+    }
+  ]
+}
