@@ -7,6 +7,7 @@ import { BroadcastMessageUseCase } from '../../application/use-cases/BroadcastMe
 import type { IMessageFactory } from '../../domain/factories/MessageFactory.ts';
 import { TOKENS } from '../container/tokens.ts';
 import { messageHandler } from '../decorators/messageHandler.ts';
+import { ILogger } from '../logging/LoggerService.ts';
 
 @injectable()
 @messageHandler(MessageType.JOIN_ROOM)
@@ -15,23 +16,35 @@ export class JoinRoomHandler extends BaseMessageHandler {
     @inject(TOKENS.BroadcastMessageUseCase)
     private readonly broadcastUseCase: BroadcastMessageUseCase,
     @inject(TOKENS.MessageFactory)
-    messageFactory: IMessageFactory
+    messageFactory: IMessageFactory,
+    @inject(TOKENS.Logger)
+    logger: ILogger
   ) {
-    super([MessageType.JOIN_ROOM]);
+    super([MessageType.JOIN_ROOM], logger.child({ handler: 'JoinRoomHandler' }));
     this.messageFactory = messageFactory;
   }
 
   async handle(message: Message, connection: WebSocketConnection): Promise<void> {
     const data = message.getData();
+    const room = data.room;
+    const username = data.username || 'Anonymous';
+    
+    this.logger.info('Processing join room request', {
+      connectionId: connection.getId(),
+      room,
+      username
+    });
+    
     const errors = this.validateRequiredFields(data, ['room']);
     
     if (errors.length > 0) {
+      this.logger.warn('Join room validation failed', {
+        connectionId: connection.getId(),
+        errors
+      });
       await this.sendError(connection, errors.join(', '));
       return;
     }
-
-    const room = data.room;
-    const username = data.username || 'Anonymous';
 
     connection.updateMetadata({ 
       room, 
@@ -60,5 +73,11 @@ export class JoinRoomHandler extends BaseMessageHandler {
       room, 
       connection.getId()
     );
+    
+    this.logger.info('User joined room successfully', {
+      connectionId: connection.getId(),
+      room,
+      username
+    });
   }
 }

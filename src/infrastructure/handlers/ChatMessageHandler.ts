@@ -7,6 +7,7 @@ import { BroadcastMessageUseCase } from '../../application/use-cases/BroadcastMe
 import type { IMessageFactory } from '../../domain/factories/MessageFactory.ts';
 import { TOKENS } from '../container/tokens.ts';
 import { messageHandler } from '../decorators/messageHandler.ts';
+import { ILogger } from '../logging/LoggerService.ts';
 
 @injectable()
 @messageHandler(MessageType.CHAT)
@@ -15,17 +16,33 @@ export class ChatMessageHandler extends BaseMessageHandler {
     @inject(TOKENS.BroadcastMessageUseCase)
     private readonly broadcastUseCase: BroadcastMessageUseCase,
     @inject(TOKENS.MessageFactory)
-    messageFactory: IMessageFactory
+    messageFactory: IMessageFactory,
+    @inject(TOKENS.Logger)
+    logger: ILogger
   ) {
-    super([MessageType.CHAT]);
+    super([MessageType.CHAT], logger.child({ handler: 'ChatMessageHandler' }));
     this.messageFactory = messageFactory;
   }
 
   async handle(message: Message, connection: WebSocketConnection): Promise<void> {
     const data = message.getData();
+    const room = data.room || 'general';
+    const author = data.author || 'Anonymous';
+    
+    this.logger.info('Processing chat message', {
+      connectionId: connection.getId(),
+      room,
+      author,
+      contentLength: data.content?.length || 0
+    });
+    
     const errors = this.validateRequiredFields(data, ['content']);
     
     if (errors.length > 0) {
+      this.logger.warn('Chat message validation failed', {
+        connectionId: connection.getId(),
+        errors
+      });
       await this.sendError(connection, errors.join(', '));
       return;
     }
@@ -34,13 +51,18 @@ export class ChatMessageHandler extends BaseMessageHandler {
       MessageType.CHAT,
       {
         content: data.content,
-        author: data.author || 'Anonymous',
-        room: data.room || 'general'
+        author,
+        room
       },
       connection.getId()
     );
 
-    const room = data.room || 'general';
     await this.broadcastUseCase.executeToRoom(chatMessage, room);
+    
+    this.logger.info('Chat message broadcasted successfully', {
+      connectionId: connection.getId(),
+      room,
+      author
+    });
   }
 }

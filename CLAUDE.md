@@ -81,6 +81,7 @@ Required in `.env`:
 - `PORT`: WebSocket server port (default: 3000)
 - `DATABASE_URL`: PostgreSQL connection string
 - `NODE_ENV`: Environment (development/production)
+- `LOG_LEVEL`: Logging level (default: info)
 
 ## Project Structure
 ```
@@ -98,6 +99,7 @@ src/
 │   ├── container/    # DI configuration
 │   ├── database/
 │   ├── handlers/
+│   ├── logging/      # Winston logger service
 │   ├── providers/
 │   ├── validation/
 │   └── websocket/
@@ -112,3 +114,20 @@ src/
 - Keep business logic in use cases
 - Use factories for entity creation
 - Test with mocked dependencies
+- Use logger service for all logging
+
+## Message Flow
+1. Message received by `BunWebSocketServer`
+2. Passed to `WebSocketController.handleMessage()`
+3. Processed by `MessageDispatcher` (validation + routing)
+4. Routed to appropriate handler via `HandleMessageUseCase`
+5. Handler executes business logic and responses
+
+## Supported Message Types
+- `join_room`: Join a chat room
+- `leave_room`: Leave current room
+- `chat`: Send chat message
+- `device_info`: Register device information
+- `broadcast`: Server broadcast message
+- `ping`/`pong`: Connection health checks
+- `error`: Error responses

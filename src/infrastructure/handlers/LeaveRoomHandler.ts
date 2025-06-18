@@ -7,6 +7,7 @@ import { BroadcastMessageUseCase } from '../../application/use-cases/BroadcastMe
 import type { IMessageFactory } from '../../domain/factories/MessageFactory.ts';
 import { TOKENS } from '../container/tokens.ts';
 import { messageHandler } from '../decorators/messageHandler.ts';
+import { ILogger } from '../logging/LoggerService.ts';
 
 @injectable()
 @messageHandler(MessageType.LEAVE_ROOM)
@@ -15,9 +16,11 @@ export class LeaveRoomHandler extends BaseMessageHandler {
     @inject(TOKENS.BroadcastMessageUseCase)
     private readonly broadcastUseCase: BroadcastMessageUseCase,
     @inject(TOKENS.MessageFactory)
-    messageFactory: IMessageFactory
+    messageFactory: IMessageFactory,
+    @inject(TOKENS.Logger)
+    logger: ILogger
   ) {
-    super([MessageType.LEAVE_ROOM]);
+    super([MessageType.LEAVE_ROOM], logger.child({ handler: 'LeaveRoomHandler' }));
     this.messageFactory = messageFactory;
   }
 
@@ -26,7 +29,17 @@ export class LeaveRoomHandler extends BaseMessageHandler {
     const currentRoom = metadata.room;
     const username = metadata.username || 'Anonymous';
     
+    this.logger.info('Processing leave room request', {
+      connectionId: connection.getId(),
+      currentRoom,
+      username
+    });
+    
     if (!currentRoom) {
+      this.logger.warn('Leave room failed - user not in any room', {
+        connectionId: connection.getId(),
+        username
+      });
       await this.sendError(connection, 'Not currently in any room');
       return;
     }
@@ -54,5 +67,11 @@ export class LeaveRoomHandler extends BaseMessageHandler {
       currentRoom, 
       connection.getId()
     );
+    
+    this.logger.info('User left room successfully', {
+      connectionId: connection.getId(),
+      room: currentRoom,
+      username
+    });
   }
 }

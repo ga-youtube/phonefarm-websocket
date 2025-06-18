@@ -3,27 +3,48 @@ import { WebSocketConnection } from '../../domain/entities/WebSocketConnection.t
 import { MessageDispatcher } from '../../application/services/MessageDispatcher.ts';
 import { TOKENS } from '../../infrastructure/container/tokens.ts';
 import { IDateProvider } from '../../domain/providers/IDateProvider.ts';
+import { ILogger } from '../../infrastructure/logging/LoggerService.ts';
 
 @injectable()
 export class WebSocketController {
+  private readonly logger: ILogger;
+
   constructor(
     @inject(TOKENS.MessageDispatcher)
     private readonly messageDispatcher: MessageDispatcher,
     @inject(TOKENS.DateProvider)
-    private readonly dateProvider: IDateProvider
-  ) {}
+    private readonly dateProvider: IDateProvider,
+    @inject(TOKENS.Logger)
+    logger: ILogger
+  ) {
+    this.logger = logger.child({ component: 'WebSocketController' });
+  }
 
   async handleConnection(connection: WebSocketConnection): Promise<void> {
-    console.log(`New connection established: ${connection.getId()}`);
+    this.logger.info('New WebSocket connection established', {
+      connectionId: connection.getId(),
+      remoteAddress: connection.getRemoteAddress()
+    });
     
     await this.sendWelcomeMessage(connection);
   }
 
   async handleMessage(rawMessage: string, connection: WebSocketConnection): Promise<void> {
+    const connectionLogger = this.logger.child({ connectionId: connection.getId() });
+    
     try {
+      connectionLogger.debug('Processing incoming message', {
+        messageLength: rawMessage.length
+      });
+      
       await this.messageDispatcher.dispatch(rawMessage, connection);
+      
+      connectionLogger.debug('Message processed successfully');
     } catch (error) {
-      console.error('Error handling message:', error);
+      connectionLogger.error('Error handling message', {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined
+      });
       
       const errorResponse = JSON.stringify({
         type: 'error',
@@ -38,16 +59,23 @@ export class WebSocketController {
   }
 
   async handleDisconnection(connection: WebSocketConnection): Promise<void> {
-    console.log(`Connection disconnected: ${connection.getId()}`);
-    
     const metadata = connection.getMetadata();
-    if (metadata.room && metadata.username) {
-      console.log(`User ${metadata.username} left room ${metadata.room}`);
-    }
+    
+    this.logger.info('WebSocket connection disconnected', {
+      connectionId: connection.getId(),
+      username: metadata.username,
+      room: metadata.room,
+      connectionDuration: Date.now() - connection.getConnectedAt().getTime()
+    });
   }
 
   async handleError(error: Error, connection?: WebSocketConnection): Promise<void> {
-    console.error('WebSocket error:', error);
+    this.logger.error('WebSocket error occurred', {
+      error: error.message,
+      stack: error.stack,
+      connectionId: connection?.getId(),
+      hasConnection: !!connection
+    });
     
     if (connection) {
       const errorResponse = JSON.stringify({
@@ -61,7 +89,10 @@ export class WebSocketController {
       try {
         connection.send(errorResponse);
       } catch (sendError) {
-        console.error('Failed to send error response:', sendError);
+        this.logger.error('Failed to send error response to client', {
+          connectionId: connection.getId(),
+          sendError: sendError instanceof Error ? sendError.message : String(sendError)
+        });
       }
     }
   }

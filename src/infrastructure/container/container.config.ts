@@ -30,6 +30,7 @@ import { IDateProvider } from '../../domain/providers/IDateProvider.ts';
 import { MessageFactory } from '../../domain/factories/MessageFactory.ts';
 import { DeviceFactory } from '../../domain/factories/DeviceFactory.ts';
 import { WebSocketConnectionFactory } from '../../domain/factories/WebSocketConnectionFactory.ts';
+import { LoggerService, ILogger } from '../logging/LoggerService.ts';
 
 // Middleware
 import { ValidationMiddleware, RateLimitMiddleware, MiddlewarePipeline } from '../../presentation/middleware/ValidationMiddleware.ts';
@@ -43,6 +44,7 @@ import { DeviceInfoMessageHandler } from '../handlers/DeviceInfoMessageHandler.t
 export function configureContainer(): void {
   // Register providers
   container.registerSingleton<IDateProvider>(TOKENS.DateProvider, DateProvider);
+  container.registerSingleton<ILogger>(TOKENS.Logger, LoggerService);
   
   // Register database
   container.registerSingleton<IDatabase>(TOKENS.Database, Database);

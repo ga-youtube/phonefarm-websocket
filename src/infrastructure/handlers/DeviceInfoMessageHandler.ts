@@ -5,8 +5,10 @@ import { WebSocketConnection } from '../../domain/entities/WebSocketConnection.t
 import { MessageType } from '../../domain/value-objects/MessageType.ts';
 import type { IDeviceRepository } from '../../domain/repositories/IDeviceRepository.ts';
 import type { IDeviceFactory } from '../../domain/factories/DeviceFactory.ts';
+import type { IMessageFactory } from '../../domain/factories/MessageFactory.ts';
 import { TOKENS } from '../container/tokens.ts';
 import { messageHandler } from '../decorators/messageHandler.ts';
+import { ILogger } from '../logging/LoggerService.ts';
 
 @injectable()
 @messageHandler(MessageType.DEVICE_INFO)
@@ -15,14 +17,19 @@ export class DeviceInfoMessageHandler extends BaseMessageHandler {
     @inject(TOKENS.DeviceRepository)
     private readonly deviceRepository: IDeviceRepository,
     @inject(TOKENS.DeviceFactory)
-    private readonly deviceFactory: IDeviceFactory
+    private readonly deviceFactory: IDeviceFactory,
+    @inject(TOKENS.MessageFactory)
+    messageFactory: IMessageFactory,
+    @inject(TOKENS.Logger)
+    logger: ILogger
   ) {
-    super([MessageType.DEVICE_INFO]);
+    super([MessageType.DEVICE_INFO], logger.child({ handler: 'DeviceInfoMessageHandler' }));
+    this.messageFactory = messageFactory;
   }
 
   async handle(message: Message, connection: WebSocketConnection): Promise<void> {
     try {
-      console.log('Processing device info message', {
+      this.logger.info('Processing device info message', {
         connectionId: connection.getId(),
         messageId: message.getId()
       });
@@ -34,7 +41,7 @@ export class DeviceInfoMessageHandler extends BaseMessageHandler {
       const validationErrors = this.validateRequiredFields(data, requiredFields);
       
       if (validationErrors.length > 0) {
-        console.warn('Device info validation failed', { errors: validationErrors });
+        this.logger.warn('Device info validation failed', { errors: validationErrors });
         await this.sendError(connection, validationErrors.join(', '));
         return;
       }
@@ -42,7 +49,7 @@ export class DeviceInfoMessageHandler extends BaseMessageHandler {
       // Additional validation for optional fields
       const additionalValidationErrors = this.validateOptionalFields(data);
       if (additionalValidationErrors.length > 0) {
-        console.warn('Device info optional field validation failed', { errors: additionalValidationErrors });
+        this.logger.warn('Device info optional field validation failed', { errors: additionalValidationErrors });
         await this.sendError(connection, additionalValidationErrors.join(', '));
         return;
       }
@@ -73,7 +80,7 @@ export class DeviceInfoMessageHandler extends BaseMessageHandler {
         deviceModel: savedDevice.getModel(),
       });
 
-      console.log('Device info processed successfully', {
+      this.logger.info('Device info processed successfully', {
         deviceId: savedDevice.getId(),
         serial: savedDevice.getSerial(),
         displayName: savedDevice.getDisplayName()
@@ -88,7 +95,7 @@ export class DeviceInfoMessageHandler extends BaseMessageHandler {
       });
 
     } catch (error) {
-      console.error('Error processing device info message', {
+      this.logger.error('Error processing device info message', {
         error: error instanceof Error ? error.message : 'Unknown error',
         connectionId: connection.getId(),
         messageId: message.getId()
