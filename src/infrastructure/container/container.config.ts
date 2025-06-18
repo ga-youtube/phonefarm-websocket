@@ -1,6 +1,7 @@
 import { container } from 'tsyringe';
 import { TOKENS } from './tokens.ts';
 import { HandlerDiscovery } from './handlerDiscovery.ts';
+import { IHandlerDiscovery } from './IHandlerDiscovery.ts';
 
 // Interfaces
 import type { IDatabase } from '../../domain/repositories/IDatabase.ts';
@@ -60,6 +61,9 @@ export function configureContainer(): void {
   container.registerSingleton<IMessageHandlerRegistry>(TOKENS.MessageHandlerRegistry, MessageHandlerRegistry);
   container.registerSingleton<IMessageValidator>(TOKENS.MessageValidator, MessageValidator);
   
+  // Register utilities
+  container.registerSingleton<IHandlerDiscovery>(TOKENS.HandlerDiscovery, HandlerDiscovery);
+  
   // Register middleware
   container.register('ValidationMiddleware', ValidationMiddleware);
   container.register('RateLimitMiddleware', RateLimitMiddleware);
@@ -89,5 +93,6 @@ export function configureContainer(): void {
     DeviceInfoMessageHandler
   ];
   
-  HandlerDiscovery.discoverAndRegisterHandlers(handlerClasses);
+  const handlerDiscovery = container.resolve<IHandlerDiscovery>(TOKENS.HandlerDiscovery);
+  handlerDiscovery.discoverAndRegisterHandlers(handlerClasses);
 }

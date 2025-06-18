@@ -32,4 +32,7 @@ export const TOKENS = {
   
   // Providers
   DateProvider: Symbol.for('DateProvider'),
+  
+  // Utilities
+  HandlerDiscovery: Symbol.for('HandlerDiscovery'),
 } as const;

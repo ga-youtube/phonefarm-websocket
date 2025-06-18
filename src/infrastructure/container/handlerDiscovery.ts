@@ -1,11 +1,18 @@
+import { injectable, inject } from 'tsyringe';
 import { container } from 'tsyringe';
 import { IMessageHandler, IMessageHandlerRegistry } from '../../application/ports/IMessageHandler.ts';
 import { MESSAGE_HANDLER_METADATA, MessageHandlerMetadata } from '../decorators/messageHandler.ts';
 import { TOKENS } from './tokens.ts';
+import { IHandlerDiscovery } from './IHandlerDiscovery.ts';
 
-export class HandlerDiscovery {
-  static discoverAndRegisterHandlers(handlerClasses: any[]): void {
-    const registry = container.resolve<IMessageHandlerRegistry>(TOKENS.MessageHandlerRegistry);
+@injectable()
+export class HandlerDiscovery implements IHandlerDiscovery {
+  constructor(
+    @inject(TOKENS.MessageHandlerRegistry)
+    private readonly registry: IMessageHandlerRegistry
+  ) {}
+  
+  discoverAndRegisterHandlers(handlerClasses: any[]): void {
     
     for (const HandlerClass of handlerClasses) {
       const metadata: MessageHandlerMetadata | undefined = Reflect.getMetadata(
@@ -15,7 +22,7 @@ export class HandlerDiscovery {
       
       if (metadata) {
         const handler = container.resolve<IMessageHandler>(HandlerClass);
-        registry.register(handler);
+        this.registry.register(handler);
         
         console.log(`Registered handler ${HandlerClass.name} for types: ${metadata.messageTypes.join(', ')}`);
       }
