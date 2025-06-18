@@ -1,7 +1,7 @@
 import { container } from 'tsyringe';
 import { TOKENS } from './tokens.ts';
 import { HandlerDiscovery } from './handlerDiscovery.ts';
-import { IHandlerDiscovery } from './IHandlerDiscovery.ts';
+import { IHandlerDiscovery } from '../../application/ports/IHandlerDiscovery.ts';
 
 // Interfaces
 import type { IDatabase } from '../../domain/repositories/IDatabase.ts';

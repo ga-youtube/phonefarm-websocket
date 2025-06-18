@@ -3,7 +3,7 @@ import { container } from 'tsyringe';
 import type { IMessageHandler, IMessageHandlerRegistry } from '../../application/ports/IMessageHandler.ts';
 import { MESSAGE_HANDLER_METADATA, MessageHandlerMetadata } from '../decorators/messageHandler.ts';
 import { TOKENS } from './tokens.ts';
-import { IHandlerDiscovery } from './IHandlerDiscovery.ts';
+import { IHandlerDiscovery } from '../../application/ports/IHandlerDiscovery.ts';
 
 @injectable()
 export class HandlerDiscovery implements IHandlerDiscovery {
