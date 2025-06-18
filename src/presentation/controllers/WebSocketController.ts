@@ -1,12 +1,20 @@
+import { injectable, inject } from 'tsyringe';
 import { WebSocketConnection } from '../../domain/entities/WebSocketConnection.ts';
 import { MessageDispatcher } from '../../application/services/MessageDispatcher.ts';
+import { TOKENS } from '../../infrastructure/container/tokens.ts';
+import { IDateProvider } from '../../domain/providers/IDateProvider.ts';
 import { ILogger } from '../../infrastructure/logging/LoggerService.ts';
 
+@injectable()
 export class WebSocketController {
   private readonly logger: ILogger;
 
   constructor(
+    @inject(TOKENS.MessageDispatcher)
     private readonly messageDispatcher: MessageDispatcher,
+    @inject(TOKENS.DateProvider)
+    private readonly dateProvider: IDateProvider,
+    @inject(TOKENS.Logger)
     logger: ILogger
   ) {
     this.logger = logger.child({ component: 'WebSocketController' });
@@ -43,7 +51,7 @@ export class WebSocketController {
         data: { 
           message: 'Internal server error' 
         },
-        timestamp: new Date()
+        timestamp: this.dateProvider.now()
       });
       
       connection.send(errorResponse);
@@ -75,7 +83,7 @@ export class WebSocketController {
         data: { 
           message: 'Connection error occurred' 
         },
-        timestamp: new Date()
+        timestamp: this.dateProvider.now()
       });
       
       try {
@@ -95,7 +103,7 @@ export class WebSocketController {
       data: {
         connectionId: connection.getId(),
         message: 'Connected to WebSocket server',
-        timestamp: new Date()
+        timestamp: this.dateProvider.now()
       }
     });
     

@@ -1,11 +1,15 @@
+import { inject } from 'tsyringe';
 import { Message } from '../../../domain/entities/Message.ts';
 import { WebSocketConnection } from '../../../domain/entities/WebSocketConnection.ts';
-import { IMessageHandler } from '../../../application/ports/IMessageHandler.ts';
+import type { IMessageHandler } from '../../../application/ports/IMessageHandler.ts';
 import { MessageType } from '../../../domain/value-objects/MessageType.ts';
+import type { IMessageFactory } from '../../../domain/factories/MessageFactory.ts';
 import { ILogger } from '../../logging/LoggerService.ts';
+import { TOKENS } from '../../container/tokens.ts';
 
 export abstract class BaseMessageHandler implements IMessageHandler {
   protected readonly supportedMessageTypes: MessageType[];
+  protected messageFactory!: IMessageFactory;
   protected readonly logger: ILogger;
 
   constructor(supportedMessageTypes: MessageType[], logger?: ILogger) {
@@ -31,7 +35,7 @@ export abstract class BaseMessageHandler implements IMessageHandler {
     type: MessageType, 
     data: any
   ): Promise<void> {
-    const response = new Message(type, data);
+    const response = this.messageFactory.create(type, data);
     const responseString = JSON.stringify(response.toJSON());
     connection.send(responseString);
   }
@@ -40,8 +44,8 @@ export abstract class BaseMessageHandler implements IMessageHandler {
     connection: WebSocketConnection, 
     errorMessage: string
   ): Promise<void> {
-    await this.sendResponse(connection, MessageType.ERROR, { 
-      message: errorMessage 
+    await this.sendResponse(connection, MessageType.ERROR, {
+      message: errorMessage
     });
   }
 
@@ -49,7 +53,7 @@ export abstract class BaseMessageHandler implements IMessageHandler {
     const errors: string[] = [];
     
     for (const field of requiredFields) {
-      if (!(field in data) || data[field] === undefined || data[field] === null) {
+      if (!data[field]) {
         errors.push(`Missing required field: ${field}`);
       }
     }

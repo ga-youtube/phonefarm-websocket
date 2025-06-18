@@ -1,16 +1,27 @@
+import { injectable, inject } from 'tsyringe';
 import { Message } from '../../domain/entities/Message.ts';
 import { WebSocketConnection } from '../../domain/entities/WebSocketConnection.ts';
 import { MessageType } from '../../domain/value-objects/MessageType.ts';
 import { BaseMessageHandler } from './base/BaseMessageHandler.ts';
 import { BroadcastMessageUseCase } from '../../application/use-cases/BroadcastMessageUseCase.ts';
+import type { IMessageFactory } from '../../domain/factories/MessageFactory.ts';
+import { TOKENS } from '../container/tokens.ts';
+import { messageHandler } from '../decorators/messageHandler.ts';
 import { ILogger } from '../logging/LoggerService.ts';
 
+@injectable()
+@messageHandler(MessageType.LEAVE_ROOM)
 export class LeaveRoomHandler extends BaseMessageHandler {
   constructor(
+    @inject(TOKENS.BroadcastMessageUseCase)
     private readonly broadcastUseCase: BroadcastMessageUseCase,
-    logger?: ILogger
+    @inject(TOKENS.MessageFactory)
+    messageFactory: IMessageFactory,
+    @inject(TOKENS.Logger)
+    logger: ILogger
   ) {
-    super([MessageType.LEAVE_ROOM], logger?.child({ handler: 'LeaveRoomHandler' }));
+    super([MessageType.LEAVE_ROOM], logger.child({ handler: 'LeaveRoomHandler' }));
+    this.messageFactory = messageFactory;
   }
 
   async handle(message: Message, connection: WebSocketConnection): Promise<void> {
@@ -41,7 +52,7 @@ export class LeaveRoomHandler extends BaseMessageHandler {
       message: `Successfully left room: ${currentRoom}`
     });
 
-    const leaveNotification = new Message(
+    const leaveNotification = this.messageFactory.create(
       MessageType.BROADCAST,
       {
         type: 'user_left',

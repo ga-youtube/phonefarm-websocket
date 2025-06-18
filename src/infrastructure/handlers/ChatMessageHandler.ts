@@ -1,16 +1,27 @@
+import { injectable, inject } from 'tsyringe';
 import { Message } from '../../domain/entities/Message.ts';
 import { WebSocketConnection } from '../../domain/entities/WebSocketConnection.ts';
 import { MessageType } from '../../domain/value-objects/MessageType.ts';
 import { BaseMessageHandler } from './base/BaseMessageHandler.ts';
 import { BroadcastMessageUseCase } from '../../application/use-cases/BroadcastMessageUseCase.ts';
+import type { IMessageFactory } from '../../domain/factories/MessageFactory.ts';
+import { TOKENS } from '../container/tokens.ts';
+import { messageHandler } from '../decorators/messageHandler.ts';
 import { ILogger } from '../logging/LoggerService.ts';
 
+@injectable()
+@messageHandler(MessageType.CHAT)
 export class ChatMessageHandler extends BaseMessageHandler {
   constructor(
+    @inject(TOKENS.BroadcastMessageUseCase)
     private readonly broadcastUseCase: BroadcastMessageUseCase,
-    logger?: ILogger
+    @inject(TOKENS.MessageFactory)
+    messageFactory: IMessageFactory,
+    @inject(TOKENS.Logger)
+    logger: ILogger
   ) {
-    super([MessageType.CHAT], logger?.child({ handler: 'ChatMessageHandler' }));
+    super([MessageType.CHAT], logger.child({ handler: 'ChatMessageHandler' }));
+    this.messageFactory = messageFactory;
   }
 
   async handle(message: Message, connection: WebSocketConnection): Promise<void> {
@@ -36,7 +47,7 @@ export class ChatMessageHandler extends BaseMessageHandler {
       return;
     }
 
-    const chatMessage = new Message(
+    const chatMessage = this.messageFactory.create(
       MessageType.CHAT,
       {
         content: data.content,

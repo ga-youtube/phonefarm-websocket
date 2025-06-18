@@ -1,18 +1,20 @@
-import { container } from './infrastructure/container/DIContainer.ts';
-import { ServiceRegistry } from './infrastructure/container/ServiceRegistry.ts';
+import 'reflect-metadata';
+import { container } from 'tsyringe';
+import { configureContainer } from './infrastructure/container/container.config.ts';
 import { BunWebSocketServer } from './infrastructure/websocket/BunWebSocketServer.ts';
 import { WebSocketController } from './presentation/controllers/WebSocketController.ts';
+import { TOKENS } from './infrastructure/container/tokens.ts';
 import { ILogger } from './infrastructure/logging/LoggerService.ts';
 
 async function bootstrap(): Promise<void> {
-  ServiceRegistry.register();
-  ServiceRegistry.registerHandlers();
+  // Configure TSyringe container
+  configureContainer();
   
-  const logger = container.resolve<ILogger>('Logger');
+  const logger = container.resolve<ILogger>(TOKENS.Logger);
   logger.info('Starting WebSocket Server...');
   
-  const webSocketServer = container.resolve<BunWebSocketServer>('BunWebSocketServer');
-  const controller = container.resolve<WebSocketController>('WebSocketController');
+  const webSocketServer = container.resolve<BunWebSocketServer>(TOKENS.BunWebSocketServer);
+  const controller = container.resolve<WebSocketController>(TOKENS.WebSocketController);
   
   webSocketServer.setEvents({
     onConnection: (connection) => controller.handleConnection(connection),

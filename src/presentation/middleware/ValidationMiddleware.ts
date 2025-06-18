@@ -1,3 +1,4 @@
+import { injectable } from 'tsyringe';
 import { WebSocketConnection } from '../../domain/entities/WebSocketConnection.ts';
 
 export interface MiddlewareResult {
@@ -9,6 +10,7 @@ export interface IMiddleware {
   execute(rawMessage: string, connection: WebSocketConnection): Promise<MiddlewareResult>;
 }
 
+@injectable()
 export class ValidationMiddleware implements IMiddleware {
   async execute(rawMessage: string, connection: WebSocketConnection): Promise<MiddlewareResult> {
     if (!rawMessage || rawMessage.trim() === '') {
@@ -30,6 +32,7 @@ export class ValidationMiddleware implements IMiddleware {
   }
 }
 
+@injectable()
 export class RateLimitMiddleware implements IMiddleware {
   private readonly messageCount = new Map<string, { count: number; lastReset: number }>();
   private readonly maxMessagesPerMinute: number;
@@ -65,6 +68,7 @@ export class RateLimitMiddleware implements IMiddleware {
   }
 }
 
+@injectable()
 export class MiddlewarePipeline {
   private readonly middlewares: IMiddleware[] = [];
 

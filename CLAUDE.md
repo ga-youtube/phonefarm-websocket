@@ -1,85 +1,133 @@
-# CLAUDE.md
+# Phone Farm WebSocket Server - Claude Development Guide
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+## Project Overview
+This is a WebSocket server built with Bun.js following Clean Architecture principles and using TSyringe for dependency injection.
 
-## Development Commands
+## Architecture
+The project follows Clean Architecture with these layers:
+- **Domain**: Core business entities and interfaces
+- **Application**: Use cases and business logic
+- **Infrastructure**: External services, database, WebSocket implementation
+- **Presentation**: Controllers and middleware
 
+## Key Technologies
+- **Runtime**: Bun.js
+- **Language**: TypeScript
+- **DI Container**: TSyringe with decorators
+- **Database**: PostgreSQL with Kysely query builder
+- **Validation**: Zod schemas
+- **Logging**: Winston logger
+
+## Development Guidelines
+
+### 1. Dependency Injection
+- All classes must use `@injectable()` decorator
+- Use constructor injection with `@inject(TOKEN)` 
+- Register services in `container.config.ts`
+- Use Symbol tokens from `tokens.ts`
+
+### 2. Code Style
+- Use TypeScript strict mode
+- Follow interface segregation principle
+- Prefer composition over inheritance
+- No direct instantiation with `new` - use factories
+
+### 3. Testing
+- Mock dependencies using TSyringe container
+- Use `IDateProvider` for testable dates
+- Isolate business logic in use cases
+
+### 4. Git Workflow
+- Feature branches from `main`
+- Descriptive commit messages
+- PR with detailed description
+- Run `bun run typecheck` before commit
+
+## Common Commands
 ```bash
-# Development with hot reload
-bun run dev
-
-# Production build and run
-bun run build
-bun run start
-
-# Type checking
-bun run typecheck
-
-# Run tests
-bun test
+bun run dev          # Start dev server with hot reload
+bun run build        # Build for production
+bun run typecheck    # Check TypeScript types
+bun test            # Run tests
 ```
 
-## Clean Architecture Structure
+## Database Migrations
+Using pgroll for zero-downtime migrations:
+```bash
+bun run db:migrate   # Apply migrations
+bun run db:rollback  # Rollback last migration
+```
 
-This WebSocket server follows Clean Architecture with strict layer separation:
+## Adding New Features
 
-### Domain Layer (`src/domain/`)
-- Contains core business entities and value objects
-- **Entities**: `Message`, `WebSocketConnection` - core business objects
-- **Value Objects**: `MessageType` enum with validation
-- **Repository Interfaces**: `IConnectionRepository` - contracts for data access
+### 1. New Message Handler
+1. Create handler class extending `BaseMessageHandler`
+2. Add `@injectable()` and `@messageHandler(MessageType)` decorators
+3. Add to handler array in `container.config.ts`
 
-### Application Layer (`src/application/`)
-- Contains business logic and use cases
-- **Use Cases**: `HandleMessageUseCase`, `BroadcastMessageUseCase` - application-specific business rules
-- **Ports**: `IMessageHandler`, `IWebSocketServer` - interfaces defining application boundaries
-- **Services**: `MessageDispatcher` - coordinates message processing
+### 2. New Service
+1. Define interface in domain layer
+2. Create implementation with `@injectable()`
+3. Add token to `tokens.ts`
+4. Register in `container.config.ts`
 
-### Infrastructure Layer (`src/infrastructure/`)
-- Implementation details and external concerns
-- **WebSocket**: `BunWebSocketServer`, `ConnectionRepository` - Bun.js WebSocket implementation
-- **Handlers**: Message handlers implementing business logic for each message type
-- **Container**: Custom dependency injection system with `DIContainer` and `ServiceRegistry`
-- **Validation**: Zod-based message validation
+### 3. New Entity
+1. Create in `domain/entities`
+2. Create factory in `domain/factories` 
+3. Use factory to create instances
 
-### Presentation Layer (`src/presentation/`)
-- Controllers and middleware for handling external interfaces
-- **Controllers**: `WebSocketController` - handles WebSocket events
-- **Middleware**: Request/response processing pipeline
+## Environment Variables
+Required in `.env`:
+- `PORT`: WebSocket server port (default: 3000)
+- `DATABASE_URL`: PostgreSQL connection string
+- `NODE_ENV`: Environment (development/production)
+- `LOG_LEVEL`: Logging level (default: info)
 
-## Dependency Injection System
+## Project Structure
+```
+src/
+├── domain/           # Business entities and interfaces
+│   ├── entities/
+│   ├── factories/
+│   ├── providers/
+│   └── value-objects/
+├── application/      # Use cases and services
+│   ├── ports/
+│   ├── services/
+│   └── use-cases/
+├── infrastructure/   # External implementations
+│   ├── container/    # DI configuration
+│   ├── database/
+│   ├── handlers/
+│   ├── logging/      # Winston logger service
+│   ├── providers/
+│   ├── validation/
+│   └── websocket/
+└── presentation/     # Controllers and middleware
+    ├── controllers/
+    └── middleware/
+```
 
-The project uses custom DI container with lifecycle management:
-- Services are registered in `ServiceRegistry.register()`
-- Message handlers are separately registered in `ServiceRegistry.registerHandlers()`
-- Container supports singleton and transient lifetimes
-- All dependencies are resolved through the container
+## Important Notes
+- Always use dependency injection
+- Follow Clean Architecture boundaries
+- Keep business logic in use cases
+- Use factories for entity creation
+- Test with mocked dependencies
+- Use logger service for all logging
 
-## Message Handler Pattern
-
-New message handlers must:
-1. Extend `BaseMessageHandler` class
-2. Implement `handle()` method with business logic
-3. Register in `ServiceRegistry.registerHandlers()`
-4. Add corresponding `MessageType` enum value
-
-## WebSocket Message Flow
-
+## Message Flow
 1. Message received by `BunWebSocketServer`
 2. Passed to `WebSocketController.handleMessage()`
 3. Processed by `MessageDispatcher` (validation + routing)
 4. Routed to appropriate handler via `HandleMessageUseCase`
 5. Handler executes business logic and responses
 
-## Path Aliases
-
-- `@/*` maps to `./src/*` for clean imports
-
 ## Supported Message Types
-
 - `join_room`: Join a chat room
 - `leave_room`: Leave current room
 - `chat`: Send chat message
+- `device_info`: Register device information
 - `broadcast`: Server broadcast message
 - `ping`/`pong`: Connection health checks
 - `error`: Error responses

@@ -1,9 +1,13 @@
+import { injectable, inject } from 'tsyringe';
 import { Message } from '../../domain/entities/Message.ts';
 import { WebSocketConnection } from '../../domain/entities/WebSocketConnection.ts';
-import { IMessageHandlerRegistry } from '../ports/IMessageHandler.ts';
+import type { IMessageHandlerRegistry } from '../ports/IMessageHandler.ts';
+import { TOKENS } from '../../infrastructure/container/tokens.ts';
 
+@injectable()
 export class HandleMessageUseCase {
   constructor(
+    @inject(TOKENS.MessageHandlerRegistry)
     private readonly handlerRegistry: IMessageHandlerRegistry
   ) {}
 
