@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Device Info WebSocket Test Client</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .container {
+            margin-bottom: 20px;
+        }
+        input, textarea, button {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+        #messages {
+            height: 300px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            padding: 10px;
+            background-color: #f8f9fa;
+        }
+        .message {
+            margin-bottom: 10px;
+            padding: 5px;
+            border-radius: 3px;
+        }
+        .sent {
+            background-color: #d4edda;
+            border-left: 4px solid #28a745;
+        }
+        .received {
+            background-color: #d1ecf1;
+            border-left: 4px solid #17a2b8;
+        }
+        .error {
+            background-color: #f8d7da;
+            border-left: 4px solid #dc3545;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .connected {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .disconnected {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <h1>Device Info WebSocket Test Client</h1>
+    
+    <div class="container">
+        <h3>Connection</h3>
+        <input type="text" id="wsUrl" value="ws://localhost:3000" placeholder="WebSocket URL">
+        <button id="connectBtn" onclick="connect()">Connect</button>
+        <button id="disconnectBtn" onclick="disconnect()" disabled>Disconnect</button>
+        <div id="status" class="status disconnected">Disconnected</div>
+    </div>
+
+    <div class="container">
+        <h3>Device Information</h3>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <input type="text" id="serial" placeholder="Serial Number" value="ABC123DEF456">
+            <input type="text" id="imei" placeholder="IMEI (optional)" value="123456789012345">
+            <input type="text" id="macAddress" placeholder="MAC Address (optional)" value="AA:BB:CC:DD:EE:FF">
+            <input type="text" id="wifiIpAddress" placeholder="WiFi IP (optional)" value="192.168.1.100">
+            <input type="text" id="brand" placeholder="Brand" value="Xiaomi">
+            <input type="text" id="model" placeholder="Model" value="Redmi Note 10">
+            <input type="text" id="release" placeholder="Android Release" value="11.0">
+            <input type="number" id="sdkInt" placeholder="SDK Int" value="30">
+        </div>
+        <button onclick="sendDeviceInfo()" disabled id="sendDeviceInfoBtn">Send Device Info</button>
+    </div>
+
+    <div class="container">
+        <h3>Other Messages</h3>
+        <button onclick="sendPing()" disabled id="pingBtn">Send Ping</button>
+        <button onclick="joinRoom()" disabled id="joinRoomBtn">Join Room</button>
+        <button onclick="sendChat()" disabled id="chatBtn">Send Chat</button>
+    </div>
+
+    <div class="container">
+        <h3>Messages</h3>
+        <div id="messages"></div>
+        <button onclick="clearMessages()">Clear Messages</button>
+    </div>
+
+    <script>
+        let socket = null;
+        let connected = false;
+
+        function connect() {
+            const url = document.getElementById('wsUrl').value;
+            socket = new WebSocket(url);
+
+            socket.onopen = function(event) {
+                connected = true;
+                updateConnectionStatus(true);
+                logMessage('Connected to ' + url, 'received');
+            };
+
+            socket.onmessage = function(event) {
+                try {
+                    const message = JSON.parse(event.data);
+                    logMessage('Received: ' + JSON.stringify(message, null, 2), 'received');
+                } catch (e) {
+                    logMessage('Received (raw): ' + event.data, 'received');
+                }
+            };
+
+            socket.onclose = function(event) {
+                connected = false;
+                updateConnectionStatus(false);
+                logMessage('Connection closed', 'error');
+            };
+
+            socket.onerror = function(error) {
+                logMessage('WebSocket error: ' + error, 'error');
+            };
+        }
+
+        function disconnect() {
+            if (socket) {
+                socket.close();
+            }
+        }
+
+        function updateConnectionStatus(isConnected) {
+            const status = document.getElementById('status');
+            const connectBtn = document.getElementById('connectBtn');
+            const disconnectBtn = document.getElementById('disconnectBtn');
+            const sendDeviceInfoBtn = document.getElementById('sendDeviceInfoBtn');
+            const pingBtn = document.getElementById('pingBtn');
+            const joinRoomBtn = document.getElementById('joinRoomBtn');
+            const chatBtn = document.getElementById('chatBtn');
+
+            if (isConnected) {
+                status.textContent = 'Connected';
+                status.className = 'status connected';
+                connectBtn.disabled = true;
+                disconnectBtn.disabled = false;
+                sendDeviceInfoBtn.disabled = false;
+                pingBtn.disabled = false;
+                joinRoomBtn.disabled = false;
+                chatBtn.disabled = false;
+            } else {
+                status.textContent = 'Disconnected';
+                status.className = 'status disconnected';
+                connectBtn.disabled = false;
+                disconnectBtn.disabled = true;
+                sendDeviceInfoBtn.disabled = true;
+                pingBtn.disabled = true;
+                joinRoomBtn.disabled = true;
+                chatBtn.disabled = true;
+            }
+        }
+
+        function sendDeviceInfo() {
+            if (!connected || !socket) return;
+
+            const deviceInfo = {
+                type: 'device_info',
+                data: {
+                    serial: document.getElementById('serial').value,
+                    imei: document.getElementById('imei').value || undefined,
+                    macAddress: document.getElementById('macAddress').value || undefined,
+                    wifiIpAddress: document.getElementById('wifiIpAddress').value || undefined,
+                    brand: document.getElementById('brand').value,
+                    model: document.getElementById('model').value,
+                    release: document.getElementById('release').value,
+                    sdkInt: parseInt(document.getElementById('sdkInt').value)
+                }
+            };
+
+            // Remove undefined values
+            Object.keys(deviceInfo.data).forEach(key => {
+                if (deviceInfo.data[key] === undefined) {
+                    delete deviceInfo.data[key];
+                }
+            });
+
+            socket.send(JSON.stringify(deviceInfo));
+            logMessage('Sent: ' + JSON.stringify(deviceInfo, null, 2), 'sent');
+        }
+
+        function sendPing() {
+            if (!connected || !socket) return;
+
+            const ping = {
+                type: 'ping',
+                data: {}
+            };
+
+            socket.send(JSON.stringify(ping));
+            logMessage('Sent: ' + JSON.stringify(ping, null, 2), 'sent');
+        }
+
+        function joinRoom() {
+            if (!connected || !socket) return;
+
+            const joinRoom = {
+                type: 'join_room',
+                data: {
+                    room: 'test-room',
+                    username: 'TestUser'
+                }
+            };
+
+            socket.send(JSON.stringify(joinRoom));
+            logMessage('Sent: ' + JSON.stringify(joinRoom, null, 2), 'sent');
+        }
+
+        function sendChat() {
+            if (!connected || !socket) return;
+
+            const chat = {
+                type: 'chat',
+                data: {
+                    content: 'Hello from device info client!'
+                }
+            };
+
+            socket.send(JSON.stringify(chat));
+            logMessage('Sent: ' + JSON.stringify(chat, null, 2), 'sent');
+        }
+
+        function logMessage(message, type) {
+            const messages = document.getElementById('messages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message ' + type;
+            messageDiv.innerHTML = '<strong>' + new Date().toLocaleTimeString() + '</strong><br>' + 
+                                   message.replace(/\n/g, '<br>');
+            messages.appendChild(messageDiv);
+            messages.scrollTop = messages.scrollHeight;
+        }
+
+        function clearMessages() {
+            document.getElementById('messages').innerHTML = '';
+        }
+
+        // Auto-generate sample data on load
+        window.onload = function() {
+            // Generate random serial
+            const serial = 'DEV' + Math.random().toString(36).substr(2, 9).toUpperCase();
+            document.getElementById('serial').value = serial;
+            
+            // Generate random IMEI
+            const imei = '86' + Math.random().toString().substr(2, 13);
+            document.getElementById('imei').value = imei;
+            
+            // Generate random MAC
+            const mac = Array.from({length: 6}, () => 
+                Math.floor(Math.random() * 256).toString(16).padStart(2, '0').toUpperCase()
+            ).join(':');
+            document.getElementById('macAddress').value = mac;
+            
+            // Generate random IP
+            const ip = `192.168.1.${Math.floor(Math.random() * 254) + 1}`;
+            document.getElementById('wifiIpAddress').value = ip;
+        };
+    </script>
+</body>
+</html>
