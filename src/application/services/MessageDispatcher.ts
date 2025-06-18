@@ -1,6 +1,8 @@
+import { injectable, inject } from 'tsyringe';
 import { Message } from '../../domain/entities/Message.ts';
 import { WebSocketConnection } from '../../domain/entities/WebSocketConnection.ts';
 import { HandleMessageUseCase } from '../use-cases/HandleMessageUseCase.ts';
+import { TOKENS } from '../../infrastructure/container/tokens.ts';
 
 export interface MessageValidationResult {
   isValid: boolean;
@@ -12,9 +14,12 @@ export interface IMessageValidator {
   parseMessage(rawMessage: string): Message;
 }
 
+@injectable()
 export class MessageDispatcher {
   constructor(
+    @inject(TOKENS.HandleMessageUseCase)
     private readonly handleMessageUseCase: HandleMessageUseCase,
+    @inject(TOKENS.MessageValidator)
     private readonly messageValidator: IMessageValidator
   ) {}
 

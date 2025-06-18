@@ -1,3 +1,4 @@
+import { injectable } from 'tsyringe';
 import { z } from 'zod';
 import { Message } from '../../domain/entities/Message.ts';
 import { MessageType } from '../../domain/value-objects/MessageType.ts';
@@ -52,6 +53,7 @@ const DeviceInfoSchema = z.object({
   })
 });
 
+@injectable()
 export class MessageValidator implements IMessageValidator {
   private readonly schemas = new Map<MessageType, z.ZodSchema>();
 
