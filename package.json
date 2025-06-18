@@ -15,13 +15,17 @@
   "dependencies": {
     "zod": "^3.22.4",
     "kysely": "^0.27.3",
-    "pg": "^8.11.3"
+    "pg": "^8.11.3",
+    "winston": "^3.17.0",
+    "zod": "^3.22.4"
   },
   "devDependencies": {
     "@types/bun": "latest",
     "typescript": "^5.3.3",
     "@types/pg": "^8.10.9",
-    "@xata.io/pgroll": "^0.7.0"
+    "@xata.io/pgroll": "^0.7.0",
+    "@types/winston": "^2.4.4",
+    "typescript": "^5.3.3"
   },
   "module": "src/index.ts",
   "type": "module"
