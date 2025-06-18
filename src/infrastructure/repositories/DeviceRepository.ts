@@ -1,9 +1,11 @@
+import { injectable } from 'tsyringe';
 import { Database } from '@/infrastructure/database/Database';
 import type { Device as DeviceEntity } from '@/domain/entities/Device';
 import { Device } from '@/domain/entities/Device';
 import type { IDeviceRepository } from '@/domain/repositories/IDeviceRepository';
 import type { Device as DeviceRow, NewDevice, DeviceUpdate } from '@/infrastructure/database/DatabaseSchema';
 
+@injectable()
 export class DeviceRepository implements IDeviceRepository {
   private readonly db = Database.getInstance();
 
