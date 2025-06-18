@@ -1,7 +1,8 @@
 import { injectable, inject } from 'tsyringe';
 import { WebSocketConnection, ConnectionStatus } from '../../domain/entities/WebSocketConnection.ts';
-import { IConnectionRepository } from '../../domain/repositories/IConnectionRepository.ts';
-import { IWebSocketServer, WebSocketServerEvents } from '../../application/ports/IWebSocketServer.ts';
+import type { IConnectionRepository } from '../../domain/repositories/IConnectionRepository.ts';
+import type { IWebSocketServer, WebSocketServerEvents } from '../../application/ports/IWebSocketServer.ts';
+import type { IWebSocketConnectionFactory } from '../../domain/factories/WebSocketConnectionFactory.ts';
 import { TOKENS } from '../container/tokens.ts';
 
 @injectable()
@@ -12,7 +13,9 @@ export class BunWebSocketServer implements IWebSocketServer {
 
   constructor(
     @inject(TOKENS.ConnectionRepository)
-    private readonly connectionRepository: IConnectionRepository
+    private readonly connectionRepository: IConnectionRepository,
+    @inject(TOKENS.WebSocketConnectionFactory)
+    private readonly connectionFactory: IWebSocketConnectionFactory
   ) {}
 
   setEvents(events: WebSocketServerEvents): void {
@@ -88,7 +91,7 @@ export class BunWebSocketServer implements IWebSocketServer {
   }
 
   private async handleOpen(ws: any): Promise<void> {
-    const connection = new WebSocketConnection(ws);
+    const connection = this.connectionFactory.create(ws);
     connection.setStatus(ConnectionStatus.CONNECTED);
     
     await this.connectionRepository.add(connection);

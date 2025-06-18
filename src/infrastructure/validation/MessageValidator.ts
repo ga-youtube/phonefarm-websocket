@@ -1,8 +1,10 @@
-import { injectable } from 'tsyringe';
+import { injectable, inject } from 'tsyringe';
 import { z } from 'zod';
 import { Message } from '../../domain/entities/Message.ts';
 import { MessageType } from '../../domain/value-objects/MessageType.ts';
-import { IMessageValidator, MessageValidationResult } from '../../application/services/MessageDispatcher.ts';
+import type { IMessageValidator, MessageValidationResult } from '../../application/services/MessageDispatcher.ts';
+import type { IMessageFactory } from '../../domain/factories/MessageFactory.ts';
+import { TOKENS } from '../container/tokens.ts';
 
 const BaseMessageSchema = z.object({
   type: z.nativeEnum(MessageType),
@@ -57,7 +59,10 @@ const DeviceInfoSchema = z.object({
 export class MessageValidator implements IMessageValidator {
   private readonly schemas = new Map<MessageType, z.ZodSchema>();
 
-  constructor() {
+  constructor(
+    @inject(TOKENS.MessageFactory)
+    private readonly messageFactory: IMessageFactory
+  ) {
     this.schemas.set(MessageType.CHAT, ChatMessageSchema);
     this.schemas.set(MessageType.JOIN_ROOM, JoinRoomSchema);
     this.schemas.set(MessageType.LEAVE_ROOM, LeaveRoomSchema);
@@ -107,7 +112,7 @@ export class MessageValidator implements IMessageValidator {
   parseMessage(rawMessage: string): Message {
     const parsedMessage = JSON.parse(rawMessage);
     
-    return new Message(
+    return this.messageFactory.create(
       parsedMessage.type,
       parsedMessage.data || {},
       parsedMessage.clientId,

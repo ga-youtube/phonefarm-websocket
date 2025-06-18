@@ -1,4 +1,7 @@
 export const TOKENS = {
+  // Database
+  Database: Symbol.for('Database'),
+  
   // Repositories
   ConnectionRepository: Symbol.for('ConnectionRepository'),
   DeviceRepository: Symbol.for('DeviceRepository'),
@@ -21,4 +24,12 @@ export const TOKENS = {
   JoinRoomHandler: Symbol.for('JoinRoomHandler'),
   LeaveRoomHandler: Symbol.for('LeaveRoomHandler'),
   DeviceInfoMessageHandler: Symbol.for('DeviceInfoMessageHandler'),
+  
+  // Factories
+  MessageFactory: Symbol.for('MessageFactory'),
+  DeviceFactory: Symbol.for('DeviceFactory'),
+  WebSocketConnectionFactory: Symbol.for('WebSocketConnectionFactory'),
+  
+  // Providers
+  DateProvider: Symbol.for('DateProvider'),
 } as const;

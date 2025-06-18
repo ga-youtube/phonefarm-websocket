@@ -1,10 +1,14 @@
+import { inject } from 'tsyringe';
 import { Message } from '../../../domain/entities/Message.ts';
 import { WebSocketConnection } from '../../../domain/entities/WebSocketConnection.ts';
-import { IMessageHandler } from '../../../application/ports/IMessageHandler.ts';
+import type { IMessageHandler } from '../../../application/ports/IMessageHandler.ts';
 import { MessageType } from '../../../domain/value-objects/MessageType.ts';
+import type { IMessageFactory } from '../../../domain/factories/MessageFactory.ts';
+import { TOKENS } from '../../container/tokens.ts';
 
 export abstract class BaseMessageHandler implements IMessageHandler {
   protected readonly supportedMessageTypes: MessageType[];
+  protected messageFactory!: IMessageFactory;
 
   constructor(supportedMessageTypes: MessageType[]) {
     this.supportedMessageTypes = supportedMessageTypes;
@@ -21,7 +25,7 @@ export abstract class BaseMessageHandler implements IMessageHandler {
     type: MessageType, 
     data: any
   ): Promise<void> {
-    const response = new Message(type, data);
+    const response = this.messageFactory.create(type, data);
     const responseString = JSON.stringify(response.toJSON());
     connection.send(responseString);
   }

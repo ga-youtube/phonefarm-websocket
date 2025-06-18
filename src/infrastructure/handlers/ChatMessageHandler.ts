@@ -4,6 +4,7 @@ import { WebSocketConnection } from '../../domain/entities/WebSocketConnection.t
 import { MessageType } from '../../domain/value-objects/MessageType.ts';
 import { BaseMessageHandler } from './base/BaseMessageHandler.ts';
 import { BroadcastMessageUseCase } from '../../application/use-cases/BroadcastMessageUseCase.ts';
+import type { IMessageFactory } from '../../domain/factories/MessageFactory.ts';
 import { TOKENS } from '../container/tokens.ts';
 import { messageHandler } from '../decorators/messageHandler.ts';
 
@@ -12,9 +13,12 @@ import { messageHandler } from '../decorators/messageHandler.ts';
 export class ChatMessageHandler extends BaseMessageHandler {
   constructor(
     @inject(TOKENS.BroadcastMessageUseCase)
-    private readonly broadcastUseCase: BroadcastMessageUseCase
+    private readonly broadcastUseCase: BroadcastMessageUseCase,
+    @inject(TOKENS.MessageFactory)
+    messageFactory: IMessageFactory
   ) {
     super([MessageType.CHAT]);
+    this.messageFactory = messageFactory;
   }
 
   async handle(message: Message, connection: WebSocketConnection): Promise<void> {
@@ -26,7 +30,7 @@ export class ChatMessageHandler extends BaseMessageHandler {
       return;
     }
 
-    const chatMessage = new Message(
+    const chatMessage = this.messageFactory.create(
       MessageType.CHAT,
       {
         content: data.content,

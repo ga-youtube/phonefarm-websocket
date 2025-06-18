@@ -1,13 +1,23 @@
-import { injectable } from 'tsyringe';
-import { Database } from '@/infrastructure/database/Database';
+import { injectable, inject } from 'tsyringe';
+import type { IDatabase } from '@/domain/repositories/IDatabase';
 import type { Device as DeviceEntity } from '@/domain/entities/Device';
-import { Device } from '@/domain/entities/Device';
 import type { IDeviceRepository } from '@/domain/repositories/IDeviceRepository';
 import type { Device as DeviceRow, NewDevice, DeviceUpdate } from '@/infrastructure/database/DatabaseSchema';
+import type { IDeviceFactory } from '@/domain/factories/DeviceFactory';
+import { TOKENS } from '@/infrastructure/container/tokens';
+import type { Kysely } from 'kysely';
+import type { Database as DatabaseSchema } from '@/infrastructure/database/DatabaseSchema';
 
 @injectable()
 export class DeviceRepository implements IDeviceRepository {
-  private readonly db = Database.getInstance();
+  private readonly db: Kysely<DatabaseSchema>;
+
+  constructor(
+    @inject(TOKENS.Database) database: IDatabase,
+    @inject(TOKENS.DeviceFactory) private readonly deviceFactory: IDeviceFactory
+  ) {
+    this.db = database.getConnection();
+  }
 
   async upsert(device: DeviceEntity): Promise<DeviceEntity> {
     const existingDevice = await this.findBySerial(device.getSerial());
@@ -161,7 +171,7 @@ export class DeviceRepository implements IDeviceRepository {
   }
 
   private rowToEntity(row: DeviceRow): DeviceEntity {
-    return new Device({
+    return this.deviceFactory.create({
       id: row.id,
       connectionId: row.connection_id,
       serial: row.serial,

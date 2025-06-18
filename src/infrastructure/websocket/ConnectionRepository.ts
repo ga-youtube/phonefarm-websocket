@@ -1,6 +1,6 @@
 import { injectable } from 'tsyringe';
 import { WebSocketConnection } from '../../domain/entities/WebSocketConnection.ts';
-import { IConnectionRepository } from '../../domain/repositories/IConnectionRepository.ts';
+import type { IConnectionRepository } from '../../domain/repositories/IConnectionRepository.ts';
 
 @injectable()
 export class ConnectionRepository implements IConnectionRepository {
