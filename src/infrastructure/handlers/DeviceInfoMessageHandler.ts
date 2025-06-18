@@ -1,12 +1,18 @@
+import { injectable, inject } from 'tsyringe';
 import { BaseMessageHandler } from './base/BaseMessageHandler.ts';
 import { Message } from '../../domain/entities/Message.ts';
 import { WebSocketConnection } from '../../domain/entities/WebSocketConnection.ts';
 import { MessageType } from '../../domain/value-objects/MessageType.ts';
 import type { IDeviceRepository } from '../../domain/repositories/IDeviceRepository.ts';
 import { Device } from '../../domain/entities/Device.ts';
+import { TOKENS } from '../container/tokens.ts';
+import { messageHandler } from '../decorators/messageHandler.ts';
 
+@injectable()
+@messageHandler(MessageType.DEVICE_INFO)
 export class DeviceInfoMessageHandler extends BaseMessageHandler {
   constructor(
+    @inject(TOKENS.DeviceRepository)
     private readonly deviceRepository: IDeviceRepository
   ) {
     super([MessageType.DEVICE_INFO]);
