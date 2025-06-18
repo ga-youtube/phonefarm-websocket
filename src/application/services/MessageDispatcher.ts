@@ -50,7 +50,7 @@ export class MessageDispatcher {
     const errorResponse = JSON.stringify({
       type: 'error',
       data: { message: errorMessage },
-      timestamp: new Date()
+      timestamp: new Date().toISOString()
     });
     
     connection.send(errorResponse);

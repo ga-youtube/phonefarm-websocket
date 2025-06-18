@@ -204,3 +204,43 @@ Ensure all classes have `@injectable()` decorator before using them in DI.
 
 ### Registration Order
 Some services may need to be registered in a specific order. The `container.config.ts` file handles this automatically.
+
+## Testable Date Handling
+
+The project uses `IDateProvider` interface for all date operations:
+
+```typescript
+@injectable()
+export class MyService {
+  constructor(
+    @inject(TOKENS.DateProvider)
+    private readonly dateProvider: IDateProvider
+  ) {}
+  
+  doSomething() {
+    const now = this.dateProvider.now();
+    const parsed = this.dateProvider.parse("2024-01-01");
+  }
+}
+```
+
+This makes testing easier:
+
+```typescript
+const mockDateProvider: IDateProvider = {
+  now: () => new Date('2024-01-01'),
+  parse: (str) => new Date(str)
+};
+container.register(TOKENS.DateProvider, { useValue: mockDateProvider });
+```
+
+## Handler Auto-Discovery
+
+Handler discovery is now an injectable service:
+
+```typescript
+const handlerDiscovery = container.resolve<IHandlerDiscovery>(TOKENS.HandlerDiscovery);
+handlerDiscovery.discoverAndRegisterHandlers(handlerClasses);
+```
+
+This improves testability and follows the single responsibility principle.

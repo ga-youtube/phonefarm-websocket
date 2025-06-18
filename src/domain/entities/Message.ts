@@ -54,12 +54,4 @@ export class Message {
     };
   }
 
-  static fromJSON(json: any): Message {
-    return new Message(
-      json.type,
-      json.data,
-      json.clientId,
-      json.id
-    );
-  }
 }

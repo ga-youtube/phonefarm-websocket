@@ -1,5 +1,5 @@
 import { injectable } from 'tsyringe';
-import { IMessageHandler, IMessageHandlerRegistry } from '../../application/ports/IMessageHandler.ts';
+import type { IMessageHandler, IMessageHandlerRegistry } from '../../application/ports/IMessageHandler.ts';
 
 @injectable()
 export class MessageHandlerRegistry implements IMessageHandlerRegistry {

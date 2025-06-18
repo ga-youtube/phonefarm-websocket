@@ -1,64 +1,105 @@
-# WebSocket Server with Clean Architecture
+# Phone Farm WebSocket Server
 
-Một WebSocket server được xây dựng với Bun.js theo kiến trúc clean architecture, sử dụng TypeScript và các design patterns hiện đại.
+A high-performance WebSocket server built with Bun.js for managing phone farm connections. The server follows Clean Architecture principles and uses TSyringe for dependency injection.
 
-## 🏗️ Kiến trúc
+## Features
 
-Dự án được tổ chức theo **Clean Architecture** với 4 layers chính:
+- 🚀 **High Performance**: Built with Bun.js for maximum speed
+- 🏗️ **Clean Architecture**: Separation of concerns with clear boundaries
+- 💉 **Dependency Injection**: TSyringe for IoC container
+- 🔌 **Real-time Communication**: WebSocket support for instant messaging
+- 📱 **Device Management**: Track and manage connected Android devices
+- 🗄️ **PostgreSQL Database**: Persistent storage with Kysely query builder
+- 🛡️ **Type Safety**: Full TypeScript support with strict mode
+- 📝 **Logging**: Comprehensive logging with Winston
+- 🔄 **Hot Reload**: Development server with hot module replacement
 
-### Domain Layer (`src/domain/`)
-- **Entities**: Message, WebSocketConnection
-- **Value Objects**: MessageType
-- **Repositories**: IConnectionRepository (interfaces)
+## Architecture
 
-### Application Layer (`src/application/`)
-- **Use Cases**: HandleMessageUseCase, BroadcastMessageUseCase
-- **Ports**: IMessageHandler, IWebSocketServer
-- **Services**: MessageDispatcher
+The project follows Clean Architecture with four main layers:
 
-### Infrastructure Layer (`src/infrastructure/`)
-- **WebSocket**: BunWebSocketServer, ConnectionRepository
-- **Handlers**: ChatMessageHandler, JoinRoomHandler, LeaveRoomHandler
-- **Validation**: MessageValidator (with Zod)
-- **Container**: Dependency Injection system
+```
+┌─────────────────────────────────────────┐
+│          Presentation Layer             │
+│     (Controllers & Middleware)          │
+├─────────────────────────────────────────┤
+│          Application Layer              │
+│      (Use Cases & Services)             │
+├─────────────────────────────────────────┤
+│           Domain Layer                  │
+│    (Entities & Business Rules)          │
+├─────────────────────────────────────────┤
+│        Infrastructure Layer             │
+│  (Database, WebSocket, External APIs)   │
+└─────────────────────────────────────────┘
+```
 
-### Presentation Layer (`src/presentation/`)
-- **Controllers**: WebSocketController
-- **Middleware**: ValidationMiddleware, RateLimitMiddleware
+## Prerequisites
 
-## 🎯 Design Patterns
+- Bun.js >= 1.0.0
+- PostgreSQL >= 14
+- Node.js >= 18 (for some tooling)
 
-- **Command Pattern**: Message handlers
-- **Repository Pattern**: Connection management
-- **Dependency Injection**: IoC container
-- **Strategy Pattern**: Message validation
-- **Observer Pattern**: WebSocket events
-- **Factory Pattern**: Handler creation
+## Installation
 
-## 🚀 Cách sử dụng
+1. Clone the repository:
+```bash
+git clone https://github.com/ga-youtube/phonefarm-websocket.git
+cd phonefarm-websocket
+```
 
-### Cài đặt dependencies
-
+2. Install dependencies:
 ```bash
 bun install
 ```
 
-### Chạy server
-
+3. Set up environment variables:
 ```bash
-# Development mode (hot reload)
-bun run dev
+cp .env.example .env
+```
 
-# Production mode
+Edit `.env` with your configuration:
+```env
+PORT=3000
+DATABASE_URL=postgresql://user:password@localhost:5432/phonefarm
+NODE_ENV=development
+```
+
+4. Run database migrations:
+```bash
+bun run db:migrate
+```
+
+## Usage
+
+### Development
+```bash
+bun run dev
+```
+This starts the server with hot reload enabled.
+
+### Production
+```bash
 bun run build
 bun run start
 ```
 
-### Test với client
+### Testing
+```bash
+bun test
+```
 
-Mở `examples/client.html` trong trình duyệt để test WebSocket connection.
+### Type Checking
+```bash
+bun run typecheck
+```
 
-## 📡 Message Types
+## WebSocket API
+
+### Connection
+Connect to `ws://localhost:3000/ws`
+
+### Message Types
 
 ### Join Room
 ```json
@@ -84,51 +125,120 @@ Mở `examples/client.html` trong trình duyệt để test WebSocket connection
 {
   "type": "chat",
   "data": {
-    "content": "Hello world!",
-    "author": "john_doe",
-    "room": "general"
+    "message": "Hello, world!"
   }
 }
 ```
 
-## 🔧 Mở rộng
+#### Device Info
+```json
+{
+  "type": "device_info",
+  "data": {
+    "serial": "device-serial",
+    "brand": "Samsung",
+    "model": "Galaxy S21",
+    "androidRelease": "12",
+    "androidSdkInt": 31,
+    "imei": "123456789012345",
+    "macAddress": "AA:BB:CC:DD:EE:FF",
+    "wifiIpAddress": "192.168.1.100"
+  }
+}
+```
 
-### Thêm Message Handler mới
+## Project Structure
 
-1. Tạo handler class kế thừa `BaseMessageHandler`
-2. Implement logic xử lý trong method `handle()`
-3. Đăng ký handler trong `ServiceRegistry`
+```
+src/
+├── domain/              # Core business logic
+│   ├── entities/        # Business entities
+│   ├── factories/       # Entity factories
+│   ├── providers/       # Domain service interfaces
+│   ├── repositories/    # Repository interfaces
+│   └── value-objects/   # Value objects
+├── application/         # Application business rules
+│   ├── ports/          # Input/Output port interfaces
+│   ├── services/       # Application services
+│   └── use-cases/      # Use case implementations
+├── infrastructure/      # External service implementations
+│   ├── container/      # DI container configuration
+│   ├── database/       # Database implementation
+│   ├── decorators/     # Custom decorators
+│   ├── handlers/       # Message handlers
+│   ├── providers/      # Provider implementations
+│   ├── repositories/   # Repository implementations
+│   ├── validation/     # Input validation
+│   └── websocket/      # WebSocket server
+└── presentation/        # User interface adapters
+    ├── controllers/    # Request controllers
+    └── middleware/     # Request middleware
+```
 
-### Thêm Validation Rules
+## Adding New Features
 
-Sử dụng Zod schemas trong `MessageValidator` để thêm validation rules mới.
+### Creating a New Message Handler
 
-### Thêm Middleware
+1. Create a new handler in `src/infrastructure/handlers/`:
+```typescript
+import { injectable, inject } from 'tsyringe';
+import { BaseMessageHandler } from './base/BaseMessageHandler';
+import { messageHandler } from '../decorators/messageHandler';
+import { MessageType } from '../../domain/value-objects/MessageType';
 
-Implement `IMiddleware` interface và thêm vào `MiddlewarePipeline`.
+@injectable()
+@messageHandler(MessageType.YOUR_TYPE)
+export class YourMessageHandler extends BaseMessageHandler {
+  constructor(
+    @inject(TOKENS.YourDependency)
+    private readonly dependency: IYourDependency
+  ) {
+    super([MessageType.YOUR_TYPE]);
+  }
 
-## 🌟 Tính năng
+  async handle(message: Message, connection: WebSocketConnection): Promise<void> {
+    // Handler implementation
+  }
+}
+```
 
-- ✅ Real-time WebSocket communication
-- ✅ Room-based messaging
-- ✅ Message validation với Zod
-- ✅ Rate limiting
-- ✅ Error handling
-- ✅ Dependency injection
-- ✅ Hot reload development
-- ✅ TypeScript support
-- ✅ Clean architecture
-- ✅ Extensible design patterns
+2. Add the handler to the handlers array in `container.config.ts`
 
-## 🏃‍♂️ Development Commands
+### Creating a New Service
+
+1. Define the interface in the domain layer
+2. Implement the service with `@injectable()` decorator
+3. Add a token to `tokens.ts`
+4. Register in `container.config.ts`
+
+## Database Migrations
+
+We use pgroll for zero-downtime PostgreSQL migrations:
 
 ```bash
-# Type checking
-bun run typecheck
+# Create a new migration
+bun run db:migrate
 
-# Run tests
-bun test
-
-# Build for production
-bun run build
+# Rollback the last migration
+bun run db:rollback
 ```
+
+## Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'feat: add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Acknowledgments
+
+- Built with [Bun.js](https://bun.sh)
+- Uses [TSyringe](https://github.com/microsoft/tsyringe) for dependency injection
+- Database queries with [Kysely](https://kysely.dev)
+- Schema validation with [Zod](https://zod.dev)
+- Logging with [Winston](https://github.com/winstonjs/winston)

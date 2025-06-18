@@ -1,43 +1,41 @@
+import { injectable } from 'tsyringe';
 import { Kysely, PostgresDialect } from 'kysely';
 import { Pool } from 'pg';
 import type { Database as DatabaseSchema } from './DatabaseSchema';
+import type { IDatabase } from '@/domain/repositories/IDatabase';
 
-export class Database {
-  private static instance: Kysely<DatabaseSchema> | null = null;
+@injectable()
+export class Database implements IDatabase {
+  private connection: Kysely<DatabaseSchema>;
+  private pool: Pool;
 
-  public static getInstance(): Kysely<DatabaseSchema> {
-    if (!Database.instance) {
-      Database.instance = Database.createConnection();
-    }
-    return Database.instance;
-  }
-
-  private static createConnection(): Kysely<DatabaseSchema> {
+  constructor() {
     const databaseUrl = process.env.DATABASE_URL;
     
     if (!databaseUrl) {
       throw new Error('DATABASE_URL environment variable is required');
     }
 
-    const pool = new Pool({
+    this.pool = new Pool({
       connectionString: databaseUrl,
       max: 20,
       idleTimeoutMillis: 30000,
       connectionTimeoutMillis: 2000,
     });
 
-    return new Kysely<DatabaseSchema>({
+    this.connection = new Kysely<DatabaseSchema>({
       dialect: new PostgresDialect({
-        pool,
+        pool: this.pool,
       }),
     });
   }
 
-  public static async close(): Promise<void> {
-    if (Database.instance) {
-      await Database.instance.destroy();
-      Database.instance = null;
-    }
+  public getConnection(): Kysely<DatabaseSchema> {
+    return this.connection;
+  }
+
+  public async close(): Promise<void> {
+    await this.connection.destroy();
   }
 }
 

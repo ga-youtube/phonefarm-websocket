@@ -44,7 +44,7 @@ export class Device {
     this.androidSdkInt = data.androidSdkInt;
     this.createdAt = data.createdAt;
     this.updatedAt = data.updatedAt;
-    this.lastSeenAt = data.lastSeenAt || new Date();
+    this.lastSeenAt = data.lastSeenAt;
   }
 
   private validateData(data: DeviceData): void {
@@ -166,12 +166,4 @@ export class Device {
     };
   }
 
-  static fromJSON(data: DeviceData): Device {
-    return new Device({
-      ...data,
-      createdAt: data.createdAt ? new Date(data.createdAt) : undefined,
-      updatedAt: data.updatedAt ? new Date(data.updatedAt) : undefined,
-      lastSeenAt: data.lastSeenAt ? new Date(data.lastSeenAt) : undefined,
-    });
-  }
 }

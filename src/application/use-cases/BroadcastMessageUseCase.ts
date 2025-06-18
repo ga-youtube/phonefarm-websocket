@@ -1,7 +1,7 @@
 import { injectable, inject } from 'tsyringe';
 import { Message } from '../../domain/entities/Message.ts';
-import { IConnectionRepository } from '../../domain/repositories/IConnectionRepository.ts';
-import { IWebSocketServer } from '../ports/IWebSocketServer.ts';
+import type { IConnectionRepository } from '../../domain/repositories/IConnectionRepository.ts';
+import type { IWebSocketServer } from '../ports/IWebSocketServer.ts';
 import { TOKENS } from '../../infrastructure/container/tokens.ts';
 
 @injectable()
