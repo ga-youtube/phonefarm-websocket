@@ -166,12 +166,4 @@ export class Device {
     };
   }
 
-  static fromJSON(data: DeviceData): Device {
-    return new Device({
-      ...data,
-      createdAt: data.createdAt ? new Date(data.createdAt) : undefined,
-      updatedAt: data.updatedAt ? new Date(data.updatedAt) : undefined,
-      lastSeenAt: data.lastSeenAt ? new Date(data.lastSeenAt) : undefined,
-    });
-  }
 }
