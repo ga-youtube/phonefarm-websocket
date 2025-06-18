@@ -44,7 +44,7 @@ export class Device {
     this.androidSdkInt = data.androidSdkInt;
     this.createdAt = data.createdAt;
     this.updatedAt = data.updatedAt;
-    this.lastSeenAt = data.lastSeenAt || new Date();
+    this.lastSeenAt = data.lastSeenAt;
   }
 
   private validateData(data: DeviceData): void {

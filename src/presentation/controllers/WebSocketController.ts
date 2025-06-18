@@ -2,12 +2,15 @@ import { injectable, inject } from 'tsyringe';
 import { WebSocketConnection } from '../../domain/entities/WebSocketConnection.ts';
 import { MessageDispatcher } from '../../application/services/MessageDispatcher.ts';
 import { TOKENS } from '../../infrastructure/container/tokens.ts';
+import { IDateProvider } from '../../domain/providers/IDateProvider.ts';
 
 @injectable()
 export class WebSocketController {
   constructor(
     @inject(TOKENS.MessageDispatcher)
-    private readonly messageDispatcher: MessageDispatcher
+    private readonly messageDispatcher: MessageDispatcher,
+    @inject(TOKENS.DateProvider)
+    private readonly dateProvider: IDateProvider
   ) {}
 
   async handleConnection(connection: WebSocketConnection): Promise<void> {
@@ -27,7 +30,7 @@ export class WebSocketController {
         data: { 
           message: 'Internal server error' 
         },
-        timestamp: new Date()
+        timestamp: this.dateProvider.now()
       });
       
       connection.send(errorResponse);
@@ -52,7 +55,7 @@ export class WebSocketController {
         data: { 
           message: 'Connection error occurred' 
         },
-        timestamp: new Date()
+        timestamp: this.dateProvider.now()
       });
       
       try {
@@ -69,7 +72,7 @@ export class WebSocketController {
       data: {
         connectionId: connection.getId(),
         message: 'Connected to WebSocket server',
-        timestamp: new Date()
+        timestamp: this.dateProvider.now()
       }
     });
     

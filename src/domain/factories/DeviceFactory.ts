@@ -15,7 +15,10 @@ export class DeviceFactory implements IDeviceFactory {
     private readonly dateProvider: IDateProvider
   ) {}
   create(data: DeviceData): Device {
-    return new Device(data);
+    return new Device({
+      ...data,
+      lastSeenAt: data.lastSeenAt || this.dateProvider.now()
+    });
   }
 
   fromJSON(data: DeviceData): Device {
