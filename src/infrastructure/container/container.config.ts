@@ -65,9 +65,9 @@ export function configureContainer(): void {
   container.registerSingleton<IHandlerDiscovery>(TOKENS.HandlerDiscovery, HandlerDiscovery);
   
   // Register middleware
-  container.register('ValidationMiddleware', ValidationMiddleware);
-  container.register('RateLimitMiddleware', RateLimitMiddleware);
-  container.register('MiddlewarePipeline', MiddlewarePipeline);
+  container.register(TOKENS.ValidationMiddleware, ValidationMiddleware);
+  container.register(TOKENS.RateLimitMiddleware, RateLimitMiddleware);
+  container.register(TOKENS.MiddlewarePipeline, MiddlewarePipeline);
   
   // Register use cases
   container.registerSingleton(TOKENS.BroadcastMessageUseCase, BroadcastMessageUseCase);

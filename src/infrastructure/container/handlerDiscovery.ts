@@ -1,6 +1,6 @@
 import { injectable, inject } from 'tsyringe';
 import { container } from 'tsyringe';
-import { IMessageHandler, IMessageHandlerRegistry } from '../../application/ports/IMessageHandler.ts';
+import type { IMessageHandler, IMessageHandlerRegistry } from '../../application/ports/IMessageHandler.ts';
 import { MESSAGE_HANDLER_METADATA, MessageHandlerMetadata } from '../decorators/messageHandler.ts';
 import { TOKENS } from './tokens.ts';
 import { IHandlerDiscovery } from './IHandlerDiscovery.ts';
