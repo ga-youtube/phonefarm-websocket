@@ -1,13 +1,17 @@
+import { injectable, inject } from 'tsyringe';
 import { WebSocketConnection, ConnectionStatus } from '../../domain/entities/WebSocketConnection.ts';
 import { IConnectionRepository } from '../../domain/repositories/IConnectionRepository.ts';
 import { IWebSocketServer, WebSocketServerEvents } from '../../application/ports/IWebSocketServer.ts';
+import { TOKENS } from '../container/tokens.ts';
 
+@injectable()
 export class BunWebSocketServer implements IWebSocketServer {
   private server: any;
   private running = false;
   private events: WebSocketServerEvents = {};
 
   constructor(
+    @inject(TOKENS.ConnectionRepository)
     private readonly connectionRepository: IConnectionRepository
   ) {}
 

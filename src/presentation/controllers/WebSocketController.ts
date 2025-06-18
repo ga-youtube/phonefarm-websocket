@@ -1,8 +1,12 @@
+import { injectable, inject } from 'tsyringe';
 import { WebSocketConnection } from '../../domain/entities/WebSocketConnection.ts';
 import { MessageDispatcher } from '../../application/services/MessageDispatcher.ts';
+import { TOKENS } from '../../infrastructure/container/tokens.ts';
 
+@injectable()
 export class WebSocketController {
   constructor(
+    @inject(TOKENS.MessageDispatcher)
     private readonly messageDispatcher: MessageDispatcher
   ) {}
 
