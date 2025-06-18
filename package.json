@@ -13,9 +13,11 @@
     "db:rollback": "pgroll --postgres-url \"$DATABASE_URL\" rollback"
   },
   "dependencies": {
-    "zod": "^3.22.4",
     "kysely": "^0.27.3",
-    "pg": "^8.11.3"
+    "pg": "^8.11.3",
+    "reflect-metadata": "^0.2.2",
+    "tsyringe": "^4.10.0",
+    "zod": "^3.22.4"
   },
   "devDependencies": {
     "@types/bun": "latest",

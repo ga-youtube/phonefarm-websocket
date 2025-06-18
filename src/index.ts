@@ -1,3 +1,4 @@
+import 'reflect-metadata';
 import { container } from './infrastructure/container/DIContainer.ts';
 import { ServiceRegistry } from './infrastructure/container/ServiceRegistry.ts';
 import { BunWebSocketServer } from './infrastructure/websocket/BunWebSocketServer.ts';
