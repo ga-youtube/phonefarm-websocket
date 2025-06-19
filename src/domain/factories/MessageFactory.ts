@@ -16,13 +16,17 @@ export class MessageFactory implements IMessageFactory {
     private readonly dateProvider: IDateProvider
   ) {}
   create(type: MessageType, data: MessageData, clientId?: string, id?: string): Message {
-    return new Message(type, data, clientId, id);
+    const messageId = id || crypto.randomUUID();
+    const timestamp = this.dateProvider.now();
+    return new Message(type, data, timestamp, clientId, messageId);
   }
 
   fromJSON(json: any): Message {
+    const timestamp = json.timestamp ? this.dateProvider.parse(json.timestamp) : this.dateProvider.now();
     return new Message(
       json.type,
       json.data || {},
+      timestamp,
       json.clientId,
       json.id
     );

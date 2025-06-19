@@ -8,17 +8,20 @@ import type { IDatabase } from '../../domain/repositories/IDatabase.ts';
 import type { IConnectionRepository } from '../../domain/repositories/IConnectionRepository.ts';
 import type { IDeviceRepository } from '../../domain/repositories/IDeviceRepository.ts';
 import type { IWebSocketServer } from '../../application/ports/IWebSocketServer.ts';
+import type { IWebSocketAdapter } from '../../application/ports/IWebSocket.ts';
 import type { IMessageHandlerRegistry } from '../../application/ports/IMessageHandler.ts';
 import type { IMessageValidator } from '../../application/services/MessageDispatcher.ts';
 import type { IMessageFactory } from '../../domain/factories/MessageFactory.ts';
 import type { IDeviceFactory } from '../../domain/factories/DeviceFactory.ts';
 import type { IWebSocketConnectionFactory } from '../../domain/factories/WebSocketConnectionFactory.ts';
+import type { IResponseFactory } from '../../domain/factories/ResponseFactory.ts';
 
 // Implementations
 import { Database } from '../database/Database.ts';
 import { ConnectionRepository } from '../websocket/ConnectionRepository.ts';
 import { DeviceRepository } from '../repositories/DeviceRepository.ts';
 import { BunWebSocketServer } from '../websocket/BunWebSocketServer.ts';
+import { BunWebSocketAdapter } from '../websocket/BunWebSocketAdapter.ts';
 import { MessageHandlerRegistry } from '../handlers/MessageHandlerRegistry.ts';
 import { MessageValidator } from '../validation/MessageValidator.ts';
 import { BroadcastMessageUseCase } from '../../application/use-cases/BroadcastMessageUseCase.ts';
@@ -30,7 +33,11 @@ import { IDateProvider } from '../../domain/providers/IDateProvider.ts';
 import { MessageFactory } from '../../domain/factories/MessageFactory.ts';
 import { DeviceFactory } from '../../domain/factories/DeviceFactory.ts';
 import { WebSocketConnectionFactory } from '../../domain/factories/WebSocketConnectionFactory.ts';
-import { LoggerService, ILogger } from '../logging/LoggerService.ts';
+import { ResponseFactory } from '../../domain/factories/ResponseFactory.ts';
+import { LoggerService } from '../logging/LoggerService.ts';
+import { ILogger } from '../../domain/providers/ILogger.ts';
+import { ConfigurationProvider } from '../providers/ConfigurationProvider.ts';
+import { IConfigurationProvider } from '../../domain/providers/IConfigurationProvider.ts';
 
 // Middleware
 import { ValidationMiddleware, RateLimitMiddleware, MiddlewarePipeline } from '../../presentation/middleware/ValidationMiddleware.ts';
@@ -43,6 +50,7 @@ import { DeviceInfoMessageHandler } from '../handlers/DeviceInfoMessageHandler.t
 
 export function configureContainer(): void {
   // Register providers
+  container.registerSingleton<IConfigurationProvider>(TOKENS.ConfigurationProvider, ConfigurationProvider);
   container.registerSingleton<IDateProvider>(TOKENS.DateProvider, DateProvider);
   container.registerSingleton<ILogger>(TOKENS.Logger, LoggerService);
   
@@ -53,6 +61,7 @@ export function configureContainer(): void {
   container.registerSingleton<IMessageFactory>(TOKENS.MessageFactory, MessageFactory);
   container.registerSingleton<IDeviceFactory>(TOKENS.DeviceFactory, DeviceFactory);
   container.registerSingleton<IWebSocketConnectionFactory>(TOKENS.WebSocketConnectionFactory, WebSocketConnectionFactory);
+  container.registerSingleton<IResponseFactory>(TOKENS.ResponseFactory, ResponseFactory);
   
   // Register repositories
   container.registerSingleton<IConnectionRepository>(TOKENS.ConnectionRepository, ConnectionRepository);
@@ -65,6 +74,7 @@ export function configureContainer(): void {
   
   // Register utilities
   container.registerSingleton<IHandlerDiscovery>(TOKENS.HandlerDiscovery, HandlerDiscovery);
+  container.registerSingleton<IWebSocketAdapter>(TOKENS.WebSocketAdapter, BunWebSocketAdapter);
   
   // Register middleware
   container.register(TOKENS.ValidationMiddleware, ValidationMiddleware);

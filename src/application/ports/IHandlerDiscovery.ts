@@ -1,3 +1,7 @@
+import { IMessageHandler } from './IMessageHandler.ts';
+
+export type MessageHandlerConstructor = new (...args: any[]) => IMessageHandler;
+
 export interface IHandlerDiscovery {
-  discoverAndRegisterHandlers(handlerClasses: any[]): void;
+  discoverAndRegisterHandlers(handlerClasses: MessageHandlerConstructor[]): void;
 }

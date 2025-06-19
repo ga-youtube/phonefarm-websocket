@@ -5,6 +5,7 @@ import { MessageType } from '../../domain/value-objects/MessageType.ts';
 import type { IMessageValidator, MessageValidationResult } from '../../application/services/MessageDispatcher.ts';
 import type { IMessageFactory } from '../../domain/factories/MessageFactory.ts';
 import { TOKENS } from '../container/tokens.ts';
+import { ApplicationConstants } from '../../domain/constants/ApplicationConstants.ts';
 
 const BaseMessageSchema = z.object({
   type: z.nativeEnum(MessageType),
@@ -45,8 +46,8 @@ const DeviceInfoSchema = z.object({
   type: z.literal(MessageType.DEVICE_INFO),
   data: z.object({
     serial: z.string().min(1, 'Device serial is required'),
-    imei: z.string().regex(/^\d{15,16}$/, 'IMEI must be 15-16 digits').optional(),
-    macAddress: z.string().regex(/^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$/, 'Invalid MAC address format').optional(),
+    imei: z.string().regex(ApplicationConstants.IMEI_REGEX, 'IMEI must be 15-16 digits').optional(),
+    macAddress: z.string().regex(ApplicationConstants.MAC_ADDRESS_REGEX, 'Invalid MAC address format').optional(),
     wifiIpAddress: z.string().ip('Invalid IP address format').optional(),
     brand: z.string().min(1, 'Device brand is required'),
     model: z.string().min(1, 'Device model is required'),

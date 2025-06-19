@@ -8,7 +8,8 @@ import type { IDeviceFactory } from '../../domain/factories/DeviceFactory.ts';
 import type { IMessageFactory } from '../../domain/factories/MessageFactory.ts';
 import { TOKENS } from '../container/tokens.ts';
 import { messageHandler } from '../decorators/messageHandler.ts';
-import { ILogger } from '../logging/LoggerService.ts';
+import { ILogger } from '../../domain/providers/ILogger.ts';
+import { ApplicationConstants } from '../../domain/constants/ApplicationConstants.ts';
 
 @injectable()
 @messageHandler(MessageType.DEVICE_INFO)
@@ -23,8 +24,11 @@ export class DeviceInfoMessageHandler extends BaseMessageHandler {
     @inject(TOKENS.Logger)
     logger: ILogger
   ) {
-    super([MessageType.DEVICE_INFO], logger.child({ handler: 'DeviceInfoMessageHandler' }));
-    this.messageFactory = messageFactory;
+    super(
+      [MessageType.DEVICE_INFO], 
+      messageFactory,
+      logger.child({ handler: 'DeviceInfoMessageHandler' })
+    );
   }
 
   async handle(message: Message, connection: WebSocketConnection): Promise<void> {
@@ -101,7 +105,7 @@ export class DeviceInfoMessageHandler extends BaseMessageHandler {
         messageId: message.getId()
       });
 
-      await this.sendError(connection, 'Failed to process device information');
+      await this.sendError(connection, ApplicationConstants.ERROR_MESSAGES.DEVICE_REGISTRATION_FAILED);
     }
   }
 
@@ -109,17 +113,17 @@ export class DeviceInfoMessageHandler extends BaseMessageHandler {
     const errors: string[] = [];
 
     // Validate MAC address format if provided
-    if (data.macAddress && !/^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$/.test(data.macAddress)) {
+    if (data.macAddress && !ApplicationConstants.MAC_ADDRESS_REGEX.test(data.macAddress)) {
       errors.push('Invalid MAC address format. Expected format: AA:BB:CC:DD:EE:FF');
     }
 
     // Validate IP address format if provided
-    if (data.wifiIpAddress && !/^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/.test(data.wifiIpAddress)) {
+    if (data.wifiIpAddress && !ApplicationConstants.IP_ADDRESS_REGEX.test(data.wifiIpAddress)) {
       errors.push('Invalid IP address format');
     }
 
     // Validate IMEI format if provided (15-16 digits)
-    if (data.imei && !/^\d{15,16}$/.test(data.imei)) {
+    if (data.imei && !ApplicationConstants.IMEI_REGEX.test(data.imei)) {
       errors.push('Invalid IMEI format. Expected 15-16 digits');
     }
 

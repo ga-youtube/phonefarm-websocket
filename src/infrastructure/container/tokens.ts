@@ -29,13 +29,16 @@ export const TOKENS = {
   MessageFactory: Symbol.for("MessageFactory"),
   DeviceFactory: Symbol.for("DeviceFactory"),
   WebSocketConnectionFactory: Symbol.for("WebSocketConnectionFactory"),
+  ResponseFactory: Symbol.for("ResponseFactory"),
 
   // Providers
   DateProvider: Symbol.for("DateProvider"),
   Logger: Symbol.for("Logger"),
+  ConfigurationProvider: Symbol.for("ConfigurationProvider"),
 
   // Utilities
   HandlerDiscovery: Symbol.for("HandlerDiscovery"),
+  WebSocketAdapter: Symbol.for("WebSocketAdapter"),
   
   // Middleware
   ValidationMiddleware: Symbol.for("ValidationMiddleware"),

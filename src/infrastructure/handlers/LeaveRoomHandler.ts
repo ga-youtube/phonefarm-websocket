@@ -7,7 +7,8 @@ import { BroadcastMessageUseCase } from '../../application/use-cases/BroadcastMe
 import type { IMessageFactory } from '../../domain/factories/MessageFactory.ts';
 import { TOKENS } from '../container/tokens.ts';
 import { messageHandler } from '../decorators/messageHandler.ts';
-import { ILogger } from '../logging/LoggerService.ts';
+import { ILogger } from '../../domain/providers/ILogger.ts';
+import { ApplicationConstants } from '../../domain/constants/ApplicationConstants.ts';
 
 @injectable()
 @messageHandler(MessageType.LEAVE_ROOM)
@@ -20,14 +21,17 @@ export class LeaveRoomHandler extends BaseMessageHandler {
     @inject(TOKENS.Logger)
     logger: ILogger
   ) {
-    super([MessageType.LEAVE_ROOM], logger.child({ handler: 'LeaveRoomHandler' }));
-    this.messageFactory = messageFactory;
+    super(
+      [MessageType.LEAVE_ROOM], 
+      messageFactory,
+      logger.child({ handler: 'LeaveRoomHandler' })
+    );
   }
 
   async handle(message: Message, connection: WebSocketConnection): Promise<void> {
     const metadata = connection.getMetadata();
     const currentRoom = metadata.room;
-    const username = metadata.username || 'Anonymous';
+    const username = metadata.username || ApplicationConstants.DEFAULT_USERNAME;
     
     this.logger.info('Processing leave room request', {
       connectionId: connection.getId(),
@@ -40,7 +44,7 @@ export class LeaveRoomHandler extends BaseMessageHandler {
         connectionId: connection.getId(),
         username
       });
-      await this.sendError(connection, 'Not currently in any room');
+      await this.sendError(connection, ApplicationConstants.ERROR_MESSAGES.NOT_IN_ROOM);
       return;
     }
 
