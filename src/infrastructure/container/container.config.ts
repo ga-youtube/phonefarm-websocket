@@ -7,12 +7,15 @@ import { IHandlerDiscovery } from '../../application/ports/IHandlerDiscovery.ts'
 import type { IDatabase } from '../../domain/repositories/IDatabase.ts';
 import type { IConnectionRepository } from '../../domain/repositories/IConnectionRepository.ts';
 import type { IDeviceRepository } from '../../domain/repositories/IDeviceRepository.ts';
+import type { IDeviceStateRepository } from '../../domain/repositories/IDeviceStateRepository.ts';
+import type { IRedisProvider } from '../../domain/providers/IRedisProvider.ts';
 import type { IWebSocketServer } from '../../application/ports/IWebSocketServer.ts';
 import type { IWebSocketAdapter } from '../../application/ports/IWebSocket.ts';
 import type { IMessageHandlerRegistry } from '../../application/ports/IMessageHandler.ts';
 import type { IMessageValidator } from '../../application/services/MessageDispatcher.ts';
 import type { IMessageFactory } from '../../domain/factories/MessageFactory.ts';
 import type { IDeviceFactory } from '../../domain/factories/DeviceFactory.ts';
+import type { IDeviceStateFactory } from '../../domain/factories/DeviceStateFactory.ts';
 import type { IWebSocketConnectionFactory } from '../../domain/factories/WebSocketConnectionFactory.ts';
 import type { IResponseFactory } from '../../domain/factories/ResponseFactory.ts';
 
@@ -20,6 +23,8 @@ import type { IResponseFactory } from '../../domain/factories/ResponseFactory.ts
 import { Database } from '../database/Database.ts';
 import { ConnectionRepository } from '../websocket/ConnectionRepository.ts';
 import { DeviceRepository } from '../repositories/DeviceRepository.ts';
+import { DeviceStateRepository } from '../repositories/DeviceStateRepository.ts';
+import { RedisProvider } from '../providers/RedisProvider.ts';
 import { BunWebSocketServer } from '../websocket/BunWebSocketServer.ts';
 import { BunWebSocketAdapter } from '../websocket/BunWebSocketAdapter.ts';
 import { MessageHandlerRegistry } from '../handlers/MessageHandlerRegistry.ts';
@@ -32,6 +37,7 @@ import { DateProvider } from '../providers/DateProvider.ts';
 import { IDateProvider } from '../../domain/providers/IDateProvider.ts';
 import { MessageFactory } from '../../domain/factories/MessageFactory.ts';
 import { DeviceFactory } from '../../domain/factories/DeviceFactory.ts';
+import { DeviceStateFactory } from '../../domain/factories/DeviceStateFactory.ts';
 import { WebSocketConnectionFactory } from '../../domain/factories/WebSocketConnectionFactory.ts';
 import { ResponseFactory } from '../../domain/factories/ResponseFactory.ts';
 import { LoggerService } from '../logging/LoggerService.ts';
@@ -47,12 +53,15 @@ import { ChatMessageHandler } from '../handlers/ChatMessageHandler.ts';
 import { JoinRoomHandler } from '../handlers/JoinRoomHandler.ts';
 import { LeaveRoomHandler } from '../handlers/LeaveRoomHandler.ts';
 import { DeviceInfoMessageHandler } from '../handlers/DeviceInfoMessageHandler.ts';
+import { DeviceStateUpdateHandler } from '../handlers/DeviceStateUpdateHandler.ts';
+import { GetDeviceStatesHandler } from '../handlers/GetDeviceStatesHandler.ts';
 
 export function configureContainer(): void {
   // Register providers
   container.registerSingleton<IConfigurationProvider>(TOKENS.ConfigurationProvider, ConfigurationProvider);
   container.registerSingleton<IDateProvider>(TOKENS.DateProvider, DateProvider);
   container.registerSingleton<ILogger>(TOKENS.Logger, LoggerService);
+  container.registerSingleton<IRedisProvider>(TOKENS.RedisProvider, RedisProvider);
   
   // Register database
   container.registerSingleton<IDatabase>(TOKENS.Database, Database);
@@ -60,12 +69,14 @@ export function configureContainer(): void {
   // Register factories
   container.registerSingleton<IMessageFactory>(TOKENS.MessageFactory, MessageFactory);
   container.registerSingleton<IDeviceFactory>(TOKENS.DeviceFactory, DeviceFactory);
+  container.registerSingleton<IDeviceStateFactory>(TOKENS.DeviceStateFactory, DeviceStateFactory);
   container.registerSingleton<IWebSocketConnectionFactory>(TOKENS.WebSocketConnectionFactory, WebSocketConnectionFactory);
   container.registerSingleton<IResponseFactory>(TOKENS.ResponseFactory, ResponseFactory);
   
   // Register repositories
   container.registerSingleton<IConnectionRepository>(TOKENS.ConnectionRepository, ConnectionRepository);
   container.registerSingleton<IDeviceRepository>(TOKENS.DeviceRepository, DeviceRepository);
+  container.registerSingleton<IDeviceStateRepository>(TOKENS.DeviceStateRepository, DeviceStateRepository);
   
   // Register infrastructure services
   container.registerSingleton<IWebSocketServer>(TOKENS.BunWebSocketServer, BunWebSocketServer);
@@ -96,13 +107,17 @@ export function configureContainer(): void {
   container.register(TOKENS.JoinRoomHandler, JoinRoomHandler);
   container.register(TOKENS.LeaveRoomHandler, LeaveRoomHandler);
   container.register(TOKENS.DeviceInfoMessageHandler, DeviceInfoMessageHandler);
+  container.register(TOKENS.DeviceStateUpdateHandler, DeviceStateUpdateHandler);
+  container.register(TOKENS.GetDeviceStatesHandler, GetDeviceStatesHandler);
   
   // Auto-register handlers
   const handlerClasses = [
     ChatMessageHandler,
     JoinRoomHandler,
     LeaveRoomHandler,
-    DeviceInfoMessageHandler
+    DeviceInfoMessageHandler,
+    DeviceStateUpdateHandler,
+    GetDeviceStatesHandler
   ];
   
   const handlerDiscovery = container.resolve<IHandlerDiscovery>(TOKENS.HandlerDiscovery);

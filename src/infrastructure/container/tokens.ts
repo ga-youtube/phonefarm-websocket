@@ -5,6 +5,7 @@ export const TOKENS = {
   // Repositories
   ConnectionRepository: Symbol.for("ConnectionRepository"),
   DeviceRepository: Symbol.for("DeviceRepository"),
+  DeviceStateRepository: Symbol.for("DeviceStateRepository"),
 
   // Services
   BunWebSocketServer: Symbol.for("BunWebSocketServer"),
@@ -24,10 +25,13 @@ export const TOKENS = {
   JoinRoomHandler: Symbol.for("JoinRoomHandler"),
   LeaveRoomHandler: Symbol.for("LeaveRoomHandler"),
   DeviceInfoMessageHandler: Symbol.for("DeviceInfoMessageHandler"),
+  DeviceStateUpdateHandler: Symbol.for("DeviceStateUpdateHandler"),
+  GetDeviceStatesHandler: Symbol.for("GetDeviceStatesHandler"),
 
   // Factories
   MessageFactory: Symbol.for("MessageFactory"),
   DeviceFactory: Symbol.for("DeviceFactory"),
+  DeviceStateFactory: Symbol.for("DeviceStateFactory"),
   WebSocketConnectionFactory: Symbol.for("WebSocketConnectionFactory"),
   ResponseFactory: Symbol.for("ResponseFactory"),
 
@@ -35,6 +39,7 @@ export const TOKENS = {
   DateProvider: Symbol.for("DateProvider"),
   Logger: Symbol.for("Logger"),
   ConfigurationProvider: Symbol.for("ConfigurationProvider"),
+  RedisProvider: Symbol.for("RedisProvider"),
 
   // Utilities
   HandlerDiscovery: Symbol.for("HandlerDiscovery"),

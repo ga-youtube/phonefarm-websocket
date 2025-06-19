@@ -56,6 +56,30 @@ const DeviceInfoSchema = z.object({
   })
 });
 
+const DeviceStateUpdateSchema = z.object({
+  type: z.literal(MessageType.DEVICE_STATE_UPDATE),
+  data: z.object({
+    deviceId: z.string().min(1, 'Device ID is required'),
+    serial: z.string().min(1, 'Device serial is required'),
+    state: z.string().min(1, 'State is required'),
+    batteryLevel: z.number().min(0).max(100).optional(),
+    temperature: z.number().optional(),
+    cpuUsage: z.number().min(0).max(100).optional(),
+    memoryUsage: z.number().min(0).max(100).optional(),
+    storageUsage: z.number().min(0).max(100).optional(),
+    metadata: z.record(z.any()).optional()
+  })
+});
+
+const GetDeviceStatesSchema = z.object({
+  type: z.literal(MessageType.GET_DEVICE_STATES),
+  data: z.object({
+    deviceIds: z.array(z.string()).optional(),
+    state: z.string().optional(),
+    includeMetrics: z.boolean().optional().default(true)
+  }).optional()
+});
+
 @injectable()
 export class MessageValidator implements IMessageValidator {
   private readonly schemas = new Map<MessageType, z.ZodSchema>();
@@ -69,6 +93,8 @@ export class MessageValidator implements IMessageValidator {
     this.schemas.set(MessageType.LEAVE_ROOM, LeaveRoomSchema);
     this.schemas.set(MessageType.PING, PingSchema);
     this.schemas.set(MessageType.DEVICE_INFO, DeviceInfoSchema);
+    this.schemas.set(MessageType.DEVICE_STATE_UPDATE, DeviceStateUpdateSchema);
+    this.schemas.set(MessageType.GET_DEVICE_STATES, GetDeviceStatesSchema);
   }
 
   validate(rawMessage: string): MessageValidationResult {
