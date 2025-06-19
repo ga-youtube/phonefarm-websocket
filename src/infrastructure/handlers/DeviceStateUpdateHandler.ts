@@ -3,7 +3,7 @@ import { BaseMessageHandler } from './base/BaseMessageHandler.ts';
 import { Message } from '../../domain/entities/Message.ts';
 import { WebSocketConnection } from '../../domain/entities/WebSocketConnection.ts';
 import { MessageType } from '../../domain/value-objects/MessageType.ts';
-import { DeviceState } from '../../domain/value-objects/DeviceState.ts';
+import { DeviceState, DeviceStateVO } from '../../domain/value-objects/DeviceState.ts';
 import type { IDeviceStateRepository } from '../../domain/repositories/IDeviceStateRepository.ts';
 import type { IDeviceRepository } from '../../domain/repositories/IDeviceRepository.ts';
 import type { IDeviceStateFactory } from '../../domain/factories/DeviceStateFactory.ts';
@@ -55,7 +55,7 @@ export class DeviceStateUpdateHandler extends BaseMessageHandler {
       // Validate state transition if applicable
       const currentState = await this.deviceStateRepository.getState(device.getId()!.toString());
       if (currentState) {
-        const newStateVO = new (await import('../../domain/value-objects/DeviceState.ts')).DeviceStateVO(data.state);
+        const newStateVO = new DeviceStateVO(data.state);
         if (!currentState.getState().canTransitionTo(newStateVO.getValue())) {
           this.logger.warn('Invalid state transition', {
             currentState: currentState.getStateValue(),
