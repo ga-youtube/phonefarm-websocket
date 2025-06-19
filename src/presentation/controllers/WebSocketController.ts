@@ -6,6 +6,9 @@ import { IDateProvider } from '../../domain/providers/IDateProvider.ts';
 import { ILogger } from '../../domain/providers/ILogger.ts';
 import { IResponseFactory } from '../../domain/factories/ResponseFactory.ts';
 import { ApplicationError } from '../../domain/errors/ApplicationError.ts';
+import type { IDeviceStateRepository } from '../../domain/repositories/IDeviceStateRepository.ts';
+import type { IDeviceRepository } from '../../domain/repositories/IDeviceRepository.ts';
+import type { IDeviceStateFactory } from '../../domain/factories/DeviceStateFactory.ts';
 
 @injectable()
 export class WebSocketController {
@@ -19,7 +22,13 @@ export class WebSocketController {
     @inject(TOKENS.Logger)
     logger: ILogger,
     @inject(TOKENS.ResponseFactory)
-    private readonly responseFactory: IResponseFactory
+    private readonly responseFactory: IResponseFactory,
+    @inject(TOKENS.DeviceStateRepository)
+    private readonly deviceStateRepository: IDeviceStateRepository,
+    @inject(TOKENS.DeviceRepository)
+    private readonly deviceRepository: IDeviceRepository,
+    @inject(TOKENS.DeviceStateFactory)
+    private readonly deviceStateFactory: IDeviceStateFactory
   ) {
     this.logger = logger.child({ component: 'WebSocketController' });
   }
@@ -29,6 +38,32 @@ export class WebSocketController {
       connectionId: connection.getId(),
       remoteAddress: connection.getRemoteAddress()
     });
+    
+    // Check if this connection has a device ID in metadata (reconnection)
+    const metadata = connection.getMetadata();
+    if (metadata.deviceId) {
+      try {
+        // Set device state to CONNECTING then ONLINE
+        const device = await this.deviceRepository.findById(parseInt(metadata.deviceId));
+        if (device) {
+          const connectingState = this.deviceStateFactory.createInitialState(
+            metadata.deviceId,
+            device.getSerial()
+          );
+          await this.deviceStateRepository.updateState(metadata.deviceId, connectingState);
+          
+          // Set to online after a brief delay
+          setTimeout(async () => {
+            await this.deviceStateRepository.setOnline(metadata.deviceId, 300); // 5 min TTL
+          }, 100);
+        }
+      } catch (error) {
+        this.logger.error('Failed to update device state on connection', {
+          deviceId: metadata.deviceId,
+          error
+        });
+      }
+    }
     
     await this.sendWelcomeMessage(connection);
   }
@@ -68,6 +103,22 @@ export class WebSocketController {
       room: metadata.room,
       connectionDuration: Date.now() - connection.getConnectedAt().getTime()
     });
+    
+    // Update device state to offline if device is associated
+    if (metadata.deviceId) {
+      try {
+        await this.deviceStateRepository.setOffline(metadata.deviceId);
+        this.logger.info('Device set to offline', {
+          deviceId: metadata.deviceId,
+          deviceSerial: metadata.deviceSerial
+        });
+      } catch (error) {
+        this.logger.error('Failed to update device state on disconnection', {
+          deviceId: metadata.deviceId,
+          error
+        });
+      }
+    }
   }
 
   async handleError(error: Error, connection?: WebSocketConnection): Promise<void> {

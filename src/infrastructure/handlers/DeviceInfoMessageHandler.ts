@@ -6,6 +6,8 @@ import { MessageType } from '../../domain/value-objects/MessageType.ts';
 import type { IDeviceRepository } from '../../domain/repositories/IDeviceRepository.ts';
 import type { IDeviceFactory } from '../../domain/factories/DeviceFactory.ts';
 import type { IMessageFactory } from '../../domain/factories/MessageFactory.ts';
+import type { IDeviceStateRepository } from '../../domain/repositories/IDeviceStateRepository.ts';
+import type { IDeviceStateFactory } from '../../domain/factories/DeviceStateFactory.ts';
 import { TOKENS } from '../container/tokens.ts';
 import { messageHandler } from '../decorators/messageHandler.ts';
 import { ILogger } from '../../domain/providers/ILogger.ts';
@@ -22,7 +24,11 @@ export class DeviceInfoMessageHandler extends BaseMessageHandler {
     @inject(TOKENS.MessageFactory)
     messageFactory: IMessageFactory,
     @inject(TOKENS.Logger)
-    logger: ILogger
+    logger: ILogger,
+    @inject(TOKENS.DeviceStateRepository)
+    private readonly deviceStateRepository: IDeviceStateRepository,
+    @inject(TOKENS.DeviceStateFactory)
+    private readonly deviceStateFactory: IDeviceStateFactory
   ) {
     super(
       [MessageType.DEVICE_INFO], 
@@ -77,12 +83,25 @@ export class DeviceInfoMessageHandler extends BaseMessageHandler {
       // Update connection metadata with device info
       connection.updateMetadata({
         ...connection.getMetadata(),
-        deviceId: savedDevice.getId(),
+        deviceId: savedDevice.getId()!.toString(),
         deviceSerial: savedDevice.getSerial(),
         deviceName: savedDevice.getDisplayName(),
         deviceBrand: savedDevice.getBrand(),
         deviceModel: savedDevice.getModel(),
       });
+
+      // Set device state to ONLINE
+      const onlineState = this.deviceStateFactory.createOnlineState(
+        savedDevice.getId()!.toString(),
+        savedDevice.getSerial(),
+        {
+          connectionId: connection.getId(),
+          ipAddress: savedDevice.getWifiIpAddress(),
+          brand: savedDevice.getBrand(),
+          model: savedDevice.getModel()
+        }
+      );
+      await this.deviceStateRepository.updateState(savedDevice.getId()!.toString(), onlineState);
 
       this.logger.info('Device info processed successfully', {
         deviceId: savedDevice.getId(),

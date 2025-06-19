@@ -6,7 +6,9 @@ export enum MessageType {
   PING = 'ping',
   PONG = 'pong',
   ERROR = 'error',
-  DEVICE_INFO = 'device_info'
+  DEVICE_INFO = 'device_info',
+  DEVICE_STATE_UPDATE = 'device_state_update',
+  GET_DEVICE_STATES = 'get_device_states'
 }
 
 export class MessageTypeVO {
