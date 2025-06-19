@@ -1,28 +1,31 @@
+import { injectable, inject } from 'tsyringe';
 import winston from 'winston';
+import { ILogger } from '../../domain/providers/ILogger.ts';
+import { IConfigurationProvider } from '../../domain/providers/IConfigurationProvider.ts';
+import { TOKENS } from '../container/tokens.ts';
 
-export interface ILogger {
-  info(message: string, meta?: any): void;
-  warn(message: string, meta?: any): void;
-  error(message: string, meta?: any): void;
-  debug(message: string, meta?: any): void;
-  child(meta: any): ILogger;
-}
-
+@injectable()
 export class LoggerService implements ILogger {
   private readonly logger: winston.Logger;
 
-  constructor() {
+  constructor(
+    @inject(TOKENS.ConfigurationProvider)
+    private readonly config: IConfigurationProvider
+  ) {
+    const logConfig = this.config.getLogConfig();
+    const appConfig = this.config.getConfig();
+
     this.logger = winston.createLogger({
-      level: process.env.LOG_LEVEL || 'info',
+      level: logConfig.level,
       format: winston.format.combine(
         winston.format.timestamp(),
         winston.format.errors({ stack: true }),
         winston.format.json()
       ),
-      defaultMeta: { service: 'phonefarm-websocket' },
+      defaultMeta: { service: logConfig.serviceName },
       transports: [
         new winston.transports.File({
-          filename: 'logs/error.log',
+          filename: logConfig.errorLogPath,
           level: 'error',
           format: winston.format.combine(
             winston.format.timestamp(),
@@ -30,7 +33,7 @@ export class LoggerService implements ILogger {
           )
         }),
         new winston.transports.File({
-          filename: 'logs/combined.log',
+          filename: logConfig.combinedLogPath,
           format: winston.format.combine(
             winston.format.timestamp(),
             winston.format.json()
@@ -40,7 +43,7 @@ export class LoggerService implements ILogger {
     });
 
     // Add console transport for non-production environments
-    if (process.env.NODE_ENV !== 'production') {
+    if (appConfig.environment !== 'production') {
       this.logger.add(new winston.transports.Console({
         format: winston.format.combine(
           winston.format.colorize(),

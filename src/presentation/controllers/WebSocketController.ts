@@ -3,7 +3,9 @@ import { WebSocketConnection } from '../../domain/entities/WebSocketConnection.t
 import { MessageDispatcher } from '../../application/services/MessageDispatcher.ts';
 import { TOKENS } from '../../infrastructure/container/tokens.ts';
 import { IDateProvider } from '../../domain/providers/IDateProvider.ts';
-import { ILogger } from '../../infrastructure/logging/LoggerService.ts';
+import { ILogger } from '../../domain/providers/ILogger.ts';
+import { IResponseFactory } from '../../domain/factories/ResponseFactory.ts';
+import { ApplicationError } from '../../domain/errors/ApplicationError.ts';
 
 @injectable()
 export class WebSocketController {
@@ -15,7 +17,9 @@ export class WebSocketController {
     @inject(TOKENS.DateProvider)
     private readonly dateProvider: IDateProvider,
     @inject(TOKENS.Logger)
-    logger: ILogger
+    logger: ILogger,
+    @inject(TOKENS.ResponseFactory)
+    private readonly responseFactory: IResponseFactory
   ) {
     this.logger = logger.child({ component: 'WebSocketController' });
   }
@@ -46,13 +50,10 @@ export class WebSocketController {
         stack: error instanceof Error ? error.stack : undefined
       });
       
-      const errorResponse = JSON.stringify({
-        type: 'error',
-        data: { 
-          message: 'Internal server error' 
-        },
-        timestamp: this.dateProvider.now()
-      });
+      const errorResponse = this.responseFactory.createErrorResponse(
+        error instanceof Error ? error : new Error(String(error)),
+        connection.getId()
+      );
       
       connection.send(errorResponse);
     }
@@ -78,13 +79,10 @@ export class WebSocketController {
     });
     
     if (connection) {
-      const errorResponse = JSON.stringify({
-        type: 'error',
-        data: { 
-          message: 'Connection error occurred' 
-        },
-        timestamp: this.dateProvider.now()
-      });
+      const errorResponse = this.responseFactory.createErrorResponse(
+        error,
+        connection.getId()
+      );
       
       try {
         connection.send(errorResponse);
@@ -98,15 +96,7 @@ export class WebSocketController {
   }
 
   private async sendWelcomeMessage(connection: WebSocketConnection): Promise<void> {
-    const welcomeMessage = JSON.stringify({
-      type: 'welcome',
-      data: {
-        connectionId: connection.getId(),
-        message: 'Connected to WebSocket server',
-        timestamp: this.dateProvider.now()
-      }
-    });
-    
+    const welcomeMessage = this.responseFactory.createWelcomeResponse(connection.getId());
     connection.send(welcomeMessage);
   }
 }

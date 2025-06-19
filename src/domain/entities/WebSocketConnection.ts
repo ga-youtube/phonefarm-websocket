@@ -1,3 +1,5 @@
+import { IWebSocket } from '../../application/ports/IWebSocket.ts';
+
 export enum ConnectionStatus {
   CONNECTING = 'connecting',
   CONNECTED = 'connected',
@@ -10,6 +12,7 @@ export interface ConnectionMetadata {
   ipAddress?: string;
   room?: string;
   userId?: string;
+  username?: string;
   [key: string]: any;
 }
 
@@ -19,17 +22,18 @@ export class WebSocketConnection {
   private readonly connectedAt: Date;
   private disconnectedAt?: Date;
   private metadata: ConnectionMetadata;
-  private readonly websocket: any;
+  private readonly websocket: IWebSocket;
 
   constructor(
-    websocket: any,
+    websocket: IWebSocket,
+    connectedAt: Date,
     id?: string,
     metadata: ConnectionMetadata = {}
   ) {
-    this.id = id || crypto.randomUUID();
+    this.id = id || '';  // ID should be provided by factory
     this.websocket = websocket;
     this.status = ConnectionStatus.CONNECTING;
-    this.connectedAt = new Date();
+    this.connectedAt = connectedAt;
     this.metadata = metadata;
   }
 
@@ -53,7 +57,7 @@ export class WebSocketConnection {
     return { ...this.metadata };
   }
 
-  getWebSocket(): any {
+  getWebSocket(): IWebSocket {
     return this.websocket;
   }
 

@@ -25,12 +25,17 @@ export class MessageHandlerRegistry implements IMessageHandlerRegistry {
   }
 
   private getSupportedTypes(handler: IMessageHandler): string[] {
-    const types: string[] = [];
-    
-    if ('supportedMessageTypes' in handler) {
-      types.push(...(handler as any).supportedMessageTypes);
+    // Check if handler has metadata from decorator
+    const metadata = Reflect.getMetadata('messageTypes', handler.constructor);
+    if (metadata && Array.isArray(metadata)) {
+      return metadata;
     }
     
-    return types;
+    // Fallback to checking if handler has supportedMessageTypes property
+    if ('supportedMessageTypes' in handler && Array.isArray((handler as any).supportedMessageTypes)) {
+      return (handler as any).supportedMessageTypes;
+    }
+    
+    return [];
   }
 }

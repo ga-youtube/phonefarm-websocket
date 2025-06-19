@@ -7,7 +7,8 @@ import { BroadcastMessageUseCase } from '../../application/use-cases/BroadcastMe
 import type { IMessageFactory } from '../../domain/factories/MessageFactory.ts';
 import { TOKENS } from '../container/tokens.ts';
 import { messageHandler } from '../decorators/messageHandler.ts';
-import { ILogger } from '../logging/LoggerService.ts';
+import { ILogger } from '../../domain/providers/ILogger.ts';
+import { ApplicationConstants } from '../../domain/constants/ApplicationConstants.ts';
 
 @injectable()
 @messageHandler(MessageType.CHAT)
@@ -20,14 +21,17 @@ export class ChatMessageHandler extends BaseMessageHandler {
     @inject(TOKENS.Logger)
     logger: ILogger
   ) {
-    super([MessageType.CHAT], logger.child({ handler: 'ChatMessageHandler' }));
-    this.messageFactory = messageFactory;
+    super(
+      [MessageType.CHAT], 
+      messageFactory,
+      logger.child({ handler: 'ChatMessageHandler' })
+    );
   }
 
   async handle(message: Message, connection: WebSocketConnection): Promise<void> {
     const data = message.getData();
-    const room = data.room || 'general';
-    const author = data.author || 'Anonymous';
+    const room = data.room || ApplicationConstants.DEFAULT_ROOM;
+    const author = data.author || ApplicationConstants.DEFAULT_USERNAME;
     
     this.logger.info('Processing chat message', {
       connectionId: connection.getId(),

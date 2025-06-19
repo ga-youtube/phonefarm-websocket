@@ -4,24 +4,22 @@ import { WebSocketConnection } from '../../../domain/entities/WebSocketConnectio
 import type { IMessageHandler } from '../../../application/ports/IMessageHandler.ts';
 import { MessageType } from '../../../domain/value-objects/MessageType.ts';
 import type { IMessageFactory } from '../../../domain/factories/MessageFactory.ts';
-import { ILogger } from '../../logging/LoggerService.ts';
+import { ILogger } from '../../../domain/providers/ILogger.ts';
 import { TOKENS } from '../../container/tokens.ts';
 
 export abstract class BaseMessageHandler implements IMessageHandler {
   protected readonly supportedMessageTypes: MessageType[];
-  protected messageFactory!: IMessageFactory;
+  protected messageFactory: IMessageFactory;
   protected readonly logger: ILogger;
 
-  constructor(supportedMessageTypes: MessageType[], logger?: ILogger) {
+  constructor(
+    supportedMessageTypes: MessageType[], 
+    messageFactory: IMessageFactory,
+    logger: ILogger
+  ) {
     this.supportedMessageTypes = supportedMessageTypes;
-    // Create a mock logger if none provided to avoid breaking existing handlers
-    this.logger = logger || {
-      info: () => {},
-      warn: () => {},
-      error: () => {},
-      debug: () => {},
-      child: () => this.logger
-    } as ILogger;
+    this.messageFactory = messageFactory;
+    this.logger = logger;
   }
 
   canHandle(messageType: string): boolean {

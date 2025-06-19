@@ -14,13 +14,14 @@ export class Message {
   constructor(
     type: MessageType,
     data: MessageData,
+    timestamp: Date,
     clientId?: string,
     id?: string
   ) {
-    this.id = id || crypto.randomUUID();
+    this.id = id || '';  // ID should be provided by factory
     this.type = type;
     this.data = data;
-    this.timestamp = new Date();
+    this.timestamp = timestamp;
     this.clientId = clientId;
   }
 

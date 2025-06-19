@@ -3,19 +3,30 @@ import { WebSocketConnection, ConnectionStatus } from '../../domain/entities/Web
 import type { IConnectionRepository } from '../../domain/repositories/IConnectionRepository.ts';
 import type { IWebSocketServer, WebSocketServerEvents } from '../../application/ports/IWebSocketServer.ts';
 import type { IWebSocketConnectionFactory } from '../../domain/factories/WebSocketConnectionFactory.ts';
+import type { ILogger } from '../../domain/providers/ILogger.ts';
+import type { IConfigurationProvider } from '../../domain/providers/IConfigurationProvider.ts';
+import type { IWebSocketAdapter } from '../../application/ports/IWebSocket.ts';
+import type { BunServer, BunWebSocket } from './types/BunTypes.ts';
 import { TOKENS } from '../container/tokens.ts';
 
 @injectable()
 export class BunWebSocketServer implements IWebSocketServer {
-  private server: any;
+  private server: BunServer | null = null;
   private running = false;
   private events: WebSocketServerEvents = {};
+  private wsToConnectionMap = new WeakMap<BunWebSocket, string>();
 
   constructor(
     @inject(TOKENS.ConnectionRepository)
     private readonly connectionRepository: IConnectionRepository,
     @inject(TOKENS.WebSocketConnectionFactory)
-    private readonly connectionFactory: IWebSocketConnectionFactory
+    private readonly connectionFactory: IWebSocketConnectionFactory,
+    @inject(TOKENS.Logger)
+    private readonly logger: ILogger,
+    @inject(TOKENS.ConfigurationProvider)
+    private readonly config: IConfigurationProvider,
+    @inject(TOKENS.WebSocketAdapter)
+    private readonly wsAdapter: IWebSocketAdapter
   ) {}
 
   setEvents(events: WebSocketServerEvents): void {
@@ -31,17 +42,18 @@ export class BunWebSocketServer implements IWebSocketServer {
         open: this.handleOpen.bind(this),
         close: this.handleClose.bind(this)
       }
-    });
+    }) as unknown as BunServer;
 
     this.running = true;
-    console.log(`WebSocket server started on port ${port}`);
+    this.logger.info('WebSocket server started', { port });
   }
 
   async stop(): Promise<void> {
     if (this.server) {
       this.server.stop();
+      this.server = null;
       this.running = false;
-      console.log('WebSocket server stopped');
+      this.logger.info('WebSocket server stopped');
     }
   }
 
@@ -77,22 +89,27 @@ export class BunWebSocketServer implements IWebSocketServer {
     return this.running;
   }
 
-  private handleFetch(req: Request): Response | Promise<Response> {
+  private handleFetch(req: Request): Response | undefined {
     const url = new URL(req.url);
+    const serverConfig = this.config.getServerConfig();
     
-    if (url.pathname === '/ws') {
-      const upgraded = this.server.upgrade(req);
+    if (url.pathname === serverConfig.wsEndpoint) {
+      const upgraded = this.server!.upgrade(req);
       if (upgraded) {
-        return undefined as any;
+        return undefined;
       }
     }
     
-    return new Response('WebSocket endpoint available at /ws', { status: 404 });
+    return new Response(`WebSocket endpoint available at ${serverConfig.wsEndpoint}`, { status: 404 });
   }
 
-  private async handleOpen(ws: any): Promise<void> {
-    const connection = this.connectionFactory.create(ws);
+  private async handleOpen(ws: BunWebSocket): Promise<void> {
+    const wrappedWs = this.wsAdapter.adapt(ws);
+    const connection = this.connectionFactory.create(wrappedWs);
     connection.setStatus(ConnectionStatus.CONNECTED);
+    
+    // Map raw WebSocket to connection ID for fast lookup
+    this.wsToConnectionMap.set(ws, connection.getId());
     
     await this.connectionRepository.add(connection);
     
@@ -101,22 +118,27 @@ export class BunWebSocketServer implements IWebSocketServer {
     }
   }
 
-  private async handleMessage(ws: any, message: string): Promise<void> {
-    const connections = await this.connectionRepository.getAll();
-    const connection = connections.find(conn => conn.getWebSocket() === ws);
+  private async handleMessage(ws: BunWebSocket, message: string): Promise<void> {
+    const connectionId = this.wsToConnectionMap.get(ws);
+    if (!connectionId) return;
     
+    const connection = await this.connectionRepository.findById(connectionId);
     if (connection && this.events.onMessage) {
       this.events.onMessage(message, connection);
     }
   }
 
-  private async handleClose(ws: any): Promise<void> {
-    const connections = await this.connectionRepository.getAll();
-    const connection = connections.find(conn => conn.getWebSocket() === ws);
+  private async handleClose(ws: BunWebSocket): Promise<void> {
+    const connectionId = this.wsToConnectionMap.get(ws);
+    if (!connectionId) return;
     
+    const connection = await this.connectionRepository.findById(connectionId);
     if (connection) {
       connection.setStatus(ConnectionStatus.DISCONNECTED);
       await this.connectionRepository.remove(connection.getId());
+      
+      // Clean up the mapping
+      this.wsToConnectionMap.delete(ws);
       
       if (this.events.onDisconnection) {
         this.events.onDisconnection(connection);

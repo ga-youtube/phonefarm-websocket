@@ -7,7 +7,8 @@ import { BroadcastMessageUseCase } from '../../application/use-cases/BroadcastMe
 import type { IMessageFactory } from '../../domain/factories/MessageFactory.ts';
 import { TOKENS } from '../container/tokens.ts';
 import { messageHandler } from '../decorators/messageHandler.ts';
-import { ILogger } from '../logging/LoggerService.ts';
+import { ILogger } from '../../domain/providers/ILogger.ts';
+import { ApplicationConstants } from '../../domain/constants/ApplicationConstants.ts';
 
 @injectable()
 @messageHandler(MessageType.JOIN_ROOM)
@@ -20,14 +21,17 @@ export class JoinRoomHandler extends BaseMessageHandler {
     @inject(TOKENS.Logger)
     logger: ILogger
   ) {
-    super([MessageType.JOIN_ROOM], logger.child({ handler: 'JoinRoomHandler' }));
-    this.messageFactory = messageFactory;
+    super(
+      [MessageType.JOIN_ROOM], 
+      messageFactory,
+      logger.child({ handler: 'JoinRoomHandler' })
+    );
   }
 
   async handle(message: Message, connection: WebSocketConnection): Promise<void> {
     const data = message.getData();
     const room = data.room;
-    const username = data.username || 'Anonymous';
+    const username = data.username || ApplicationConstants.DEFAULT_USERNAME;
     
     this.logger.info('Processing join room request', {
       connectionId: connection.getId(),
